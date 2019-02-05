@@ -4,55 +4,54 @@
 #include<string.h>
 struct num{
 	char *shuZi;
-	int xsd;    /*xsd¼´Ğ¡Êıµã£¬¼ÇÂ¼Ğ¡ÊıµãµÄÏÂ±ê (radix point)*/
-	int length;   /*length¼´Êı×ÖµÄÊı×é³¤¶È*/
-	int intLength; /*intLength¼´ÕûÊı²¿·ÖµÄ³¤¶È*/
-	int fractionLength; /*fractionLength¼´Ğ¡Êı²¿·ÖµÄ³¤¶È*/
-	//int validIntStart; /*·ÇÁãÊıÆğÊ¼ÏÂ±ê*/
-	int xb; /*xb¼´ÏÂ±ê (position)*/
-	bool is_positive;   /*ÅĞ¶ÏÊÇ·ñÎªÕıÊı*/
-	bool intIsZero;     /*ÅĞ¶ÏÕûÊı²¿·ÖÊÇ·ñÎªÁã*/
-	bool xsIsZero;     /*ÅĞ¶ÏĞ¡Êı²¿·ÖÊÇ·ñÎªÁã*/
-	bool moveOneStep;   /*½öÒÆ¶¯Ò»²½£¬ÖµÎªÕæÊ±£¬ÏÂ±êÓ¦¼õÒ»*/
+	int xsd;    /*xsdå³å°æ•°ç‚¹ï¼Œè®°å½•å°æ•°ç‚¹çš„ä¸‹æ ‡ (radix point)*/
+	int length;   /*lengthå³æ•°å­—çš„æ•°ç»„é•¿åº¦*/
+	int intLength; /*intLengthå³æ•´æ•°éƒ¨åˆ†çš„é•¿åº¦*/
+	int fractionLength; /*fractionLengthå³å°æ•°éƒ¨åˆ†çš„é•¿åº¦*/
+	//int validIntStart; /*éé›¶æ•°èµ·å§‹ä¸‹æ ‡*/
+	int xb; /*xbå³ä¸‹æ ‡ (position)*/
+	bool is_positive;   /*åˆ¤æ–­æ˜¯å¦ä¸ºæ­£æ•°*/
+	bool intIsZero;     /*åˆ¤æ–­æ•´æ•°éƒ¨åˆ†æ˜¯å¦ä¸ºé›¶*/
+	bool xsIsZero;     /*åˆ¤æ–­å°æ•°éƒ¨åˆ†æ˜¯å¦ä¸ºé›¶*/
+	bool moveOneStep;   /*ä»…ç§»åŠ¨ä¸€æ­¥ï¼Œå€¼ä¸ºçœŸæ—¶ï¼Œä¸‹æ ‡åº”å‡ä¸€*/
 };
 typedef struct num    snum;
 
-/**¶¨Òå½øÖÆ£¬·¶Î§Ó¦ÔÚcharµÄ´óĞ¡ÒÔÄÚ**/
-int jinZhi = 10;  /*´Ë´¦¶¨ÒåÎªÊ®½øÖÆ*/
+/**å®šä¹‰è¿›åˆ¶ï¼ŒèŒƒå›´åº”åœ¨charçš„å¤§å°ä»¥å†…**/
+int jinZhi = 10;  /*æ­¤å¤„å®šä¹‰ä¸ºåè¿›åˆ¶*/
 
 /*mode=1:plus,mode=2:minus,mode=3:multiply,mode=4:divide;
-*Ä£Ê½1-4·Ö±ğÎª¼Ó¼õ³Ë³ı
+*æ¨¡å¼1-4åˆ†åˆ«ä¸ºåŠ å‡ä¹˜é™¤
 */
 char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precision,char **remainder);
-/*¼Ó·¨¡¢¼õ·¨ºÍ³Ë·¨£¬±¾ÖÊÉÏ¶¼ÊÇ¼Ó·¨£¬
-*´Ëº¯ÊıÎª·½±ã³ı·¨ÔËËã¶øÉè¼Æ£¬Í¬Ê±¸øbigNumComptueÊİÉí
+/*åŠ æ³•ã€å‡æ³•å’Œä¹˜æ³•ï¼Œæœ¬è´¨ä¸Šéƒ½æ˜¯åŠ æ³•ï¼Œ
+*æ­¤å‡½æ•°ä¸ºæ–¹ä¾¿é™¤æ³•è¿ç®—è€Œè®¾è®¡ï¼ŒåŒæ—¶ç»™bigNumComptueç˜¦èº«
 */
 void plusUnit(snum *s1,snum *s2,char *result,int *i,int mode);
 
-/*limitSizeÔÊĞíÍâ²¿´«ÈëÊı¾İÒÔ¿ØÖÆº¯Êı·ÖÎö·¶Î§£¬Èç¹û²»ÊÇÕıÊı£¬ÔòÄ¬ÈÏ¶ÁÍêÕû¸öÊı×é£¬Ä¬ÈÏ×îºóÒ»Î»ÊÇ½áÊø·û£¨'\0'£©*/
+/*limitSizeå…è®¸å¤–éƒ¨ä¼ å…¥æ•°æ®ä»¥æ§åˆ¶å‡½æ•°åˆ†æèŒƒå›´ï¼Œå¦‚æœä¸æ˜¯æ­£æ•°ï¼Œåˆ™é»˜è®¤è¯»å®Œæ•´ä¸ªæ•°ç»„ï¼Œé»˜è®¤æœ€åä¸€ä½æ˜¯ç»“æŸç¬¦ï¼ˆ'\0'ï¼‰*/
 void analyzeNum(snum *num,int limitSize);
-/*¹ËÃûË¼Òå£¬covertInt2Char¼´ÕûĞÍÖµ×ª»»³É×Ö·ûĞÍÖµ*/
+/*é¡¾åæ€ä¹‰ï¼ŒcovertInt2Charå³æ•´å‹å€¼è½¬æ¢æˆå­—ç¬¦å‹å€¼*/
 void covertInt2Char(char *result,snum *aim,bool headspace);
-/*ÖØĞÂ·ÖÅäÊı×Ö×Ö·ûÊı×éµÄ¿Õ¼ä£¬²¢Íê³É×Ô¶¨Òå¿½±´*/
-void reallocStr(char **aim,int size,int startP,int endP);
-/*dropPort¹ËÃûË¼Òå£¬¼´¶ªµôĞ¡Êıµã£¬
-*´Ëº¯ÊıÉè¼Æ×¨Îª³ı·¨·şÎñ£¬»á°ÑÊı×Öb£¨·ÖÄ¸£¬³ıÊı£©»¯³ÉÕûÊı£¬
-*Êı×ÖaºÍÊı×Öb¸÷×ÔµÄĞ¡Êıµã½«ÒÆ¶¯Í¬Ñù¶àµÄÎ»Êı£¬
-*×îÖÕ·µ»ØÒÆ¶¯Î»Êı
+/*dropPorté¡¾åæ€ä¹‰ï¼Œå³ä¸¢æ‰å°æ•°ç‚¹ï¼Œ
+*æ­¤å‡½æ•°è®¾è®¡ä¸“ä¸ºé™¤æ³•æœåŠ¡ï¼Œä¼šæŠŠæ•°å­—bï¼ˆåˆ†æ¯ï¼Œé™¤æ•°ï¼‰åŒ–æˆæ•´æ•°ï¼Œ
+*æ•°å­—aå’Œæ•°å­—bå„è‡ªçš„å°æ•°ç‚¹å°†ç§»åŠ¨åŒæ ·å¤šçš„ä½æ•°ï¼Œ
+*æœ€ç»ˆè¿”å›ç§»åŠ¨ä½æ•°
 */
-int dropPort(char **a,char **b);
+void justCopyResult(char *result,char *num1,char *num2,int mode);
+
 int serialZeroCount(char *shuZi,int s1end);
-/*³ıÈ¥×Ö·ûĞÍÊı×éÖĞµÄÎŞĞ§×Ö·û*/
+/*é™¤å»å­—ç¬¦å‹æ•°ç»„ä¸­çš„æ— æ•ˆå­—ç¬¦*/
 void jumpUselessChar(char **ShuZi);
 
-/*charSwap¹ËÃûË¼Òå£¬¼´×Ö·ûĞÍ±äÁ¿½»»»*/
+/*charSwapé¡¾åæ€ä¹‰ï¼Œå³å­—ç¬¦å‹å˜é‡äº¤æ¢*/
 void charSwap(char *a,char *b);
-/*charPtrSwap¼´charPointerSwap
-*¹ËÃûË¼Òå£¬¼´×Ö·ûĞÍÖ¸Õë±äÁ¿½»»»
+/*charPtrSwapå³charPointerSwap
+*é¡¾åæ€ä¹‰ï¼Œå³å­—ç¬¦å‹æŒ‡é’ˆå˜é‡äº¤æ¢
 */
 void charPtrSwap(char **a,char **b);
 void strcpy2(char *a,char *b,int s1end);
-/*getMaxInt¹ËÃûË¼Òå£¬¼´»ñÈ¡a,bÁ½ÕßÖĞ×î´óµÄÖµ*/
+/*getMaxInté¡¾åæ€ä¹‰ï¼Œå³è·å–a,bä¸¤è€…ä¸­æœ€å¤§çš„å€¼*/
 int getMaxInt(int a,int b);
 char *getZeroStr(int fractionLength);
 
@@ -64,15 +63,30 @@ void testSystem(char *a,char *b);
 
 int main(void)
 {
-	int i=0;
+	int i,precision=0;
 	char shu1[200],shu2[200],*result=NULL;
 	/*puts(result=getZeroStr(6));
 	printf("strSize=%d\n",_msize(result));*/
-	//gets(shu1);
-	//gets(shu2);
 	testSystem(shu1,shu2);
+	i=4;precision=500;
+	/*
+	printf("Please choose a mode:");
+	scanf("%d",&i);
+	if(i == 4)
+	{
+		printf("Please input precision:");
+		scanf("%d",&precision);
+	}
+	if(precision<0 || i<0 || i>4)
+		exit(250);
+	getchar();
+	printf("Please input num1:");
+	gets(shu1);
+	printf("Please input num2:");
+	gets(shu2);
+	*/
 	printf("\n\n");
-	result=bigNumCompute(shu1,shu2,false,3,0,NULL);
+	result=bigNumCompute(shu1,shu2,false,i,precision,NULL);
 	while(result[++i]!='\0');
 	puts(result);
 	printf("\nstrlen=%d\n",i);
@@ -85,18 +99,24 @@ int main(void)
 }
 char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precision,char **remainder)
 {
-	int i,i2;
+	int i,i2,tmpInt,minSize=0,moveStep=0;;
 	bool flag1,flag2;
 	bool is_syn=false,is_positive=true;
-	char *tmpCharPoint=NULL,*backup1,*backup2;
-	int tmpInt;
+	char *tmpCharPoint,*shu1src,*shu2src;
+	/*startPointè®°å½•â€œç»“æœâ€é‡Œçš„å°æ•°ç‚¹çš„ä¸‹æ ‡ï¼Œ
+	*ä½†ä¸åŒç®—æ³•ï¼Œç”±äºiçš„ç§»åŠ¨æ–¹å‘ä¸ä¸€æ ·
+	*startPointçš„å€¼å¹¶ä¸æ˜¯ç»Ÿä¸€çš„startPoint = i*/
+	int startPoint=-1;
+	char *result,*yu2,*buff;
+	char oneCharStr[2]={'0','\0'},zeroCopy[2]={'0','\0'};
 	i=i2=tmpInt=0;
 	flag1=flag2=false;
+	tmpCharPoint = shu1src = shu2src = NULL;
 	if(shu1 == NULL || shu2 == NULL)
 		exit(250);
 	if(shu1[0]=='-')
 	{
-		shu1++;/*½Øµô¸ººÅ*/
+		shu1++;/*æˆªæ‰è´Ÿå·*/
 		flag1=true;
 	}
 	if(shu2[0]=='-')
@@ -108,30 +128,86 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 	jumpUselessChar(&shu2);
 	if(mode == 4)
 	{
-		tmpInt = dropPort(&shu1,&shu2);
-		backup1 = shu1;
-		backup2 = shu2;
+		snum ss1,ss2;
+		ss1.shuZi = shu1;
+		ss2.shuZi = shu2;
+		analyzeNum(&ss2,-1);
+		analyzeNum(&ss1,-1);
+		shu1src = (char *)malloc(sizeof(char)*(ss1.length +3) );
+		if( shu1src == NULL )
+			exit(444);
+		strcpy(shu1src,ss1.shuZi);
+		shu2src = (char *)malloc(sizeof(char)*(ss2.length +3) );
+		if( shu2src == NULL )
+			exit(444);
+		strcpy(shu2src,ss2.shuZi);
+		if( ss2.xsd != -1 )
+		{
+			if(ss2.xsIsZero)
+			{
+				shu2src = (char *)realloc(shu2src,sizeof(char)*(ss2.length - ss2.fractionLength +3));
+				if(shu2src == NULL)
+					exit(444);
+				strcpy2(shu2src,ss2.shuZi,ss2.xsd);
+				shu2src[ss2.xsd]='\0';
+			}
+			else if( ss2.fractionLength > ss1.fractionLength )
+			{
+				shu1src = (char *)realloc(shu1src, sizeof(char)*(ss1.length + ss2.fractionLength - ss1.fractionLength +3) );
+				if( shu1src == NULL )
+					exit(444);
+				ss1.xb = ss1.length;
+				if(ss1.xsd == -1)
+				{
+					ss1.xsd = ss1.length ++;
+					shu1src[ss1.xsd]='.';
+					ss1.xb++;
+				}
+				for(  ; ss1.xb < ss1.length + ss2.fractionLength - ss1.fractionLength ; ss1.xb++ )
+					shu1src[ss1.xb]='0';
+				shu1src[ss1.xb]='\0';
+			}
+			ss1.xb = ss1.xsd;
+			ss2.xb = ss2.xsd;
+			while( ss2.xb < ss2.length )
+			{
+				charSwap(&shu1src[ss1.xb] , &shu1src[ss1.xb+1]);
+				charSwap(&shu2src[ss2.xb] , &shu2src[ss2.xb+1]);
+				ss1.xb++;
+				ss2.xb++;
+				moveStep++; 
+			}
+			shu1src[ss1.xb +1]='\0';
+		}
+		shu1 = shu1src;
+		shu2 = shu2src;
 		jumpUselessChar(&shu1);
 		jumpUselessChar(&shu2);
 	}
+	else
+	{
+		shu1src = shu1;
+		shu2src = shu2;
+	}
+	
 	if(  (!flag1 && flag2) || (flag1 && !flag2)  )
-	{/**Ò»¸öÕıÊıºÍÒ»¸ö¸ºÊıµÄÇé¿öÏÂ*/
+	{/**ä¸€ä¸ªæ­£æ•°å’Œä¸€ä¸ªè´Ÿæ•°çš„æƒ…å†µä¸‹*/
 		switch (mode)
 		{
 			case 1:
-				/**ÕıÊı¼Ó¸ºÊıÔËËã ºÍ ¸ºÊı¼ÓÕıÊıÔËËã ¿ÉÒÔ»¯×÷¼õ·¨ÔËËã**/
+				/**æ­£æ•°åŠ è´Ÿæ•°è¿ç®— å’Œ è´Ÿæ•°åŠ æ­£æ•°è¿ç®— å¯ä»¥åŒ–ä½œå‡æ³•è¿ç®—**/
 				if(!flag1)
 					tmpCharPoint=bigNumCompute(shu1,shu2,false,2,0,NULL);
 				else
 					tmpCharPoint=bigNumCompute(shu2,shu1,false,2,0,NULL);
-				return tmpCharPoint;/***´óÊı×Ö¼õ·¨ÒÑ¾­½â¾öºÃ·ûºÅÎÊÌâ£¬Ö±½Ó·µ»Ø´ğ°¸***/
+				return tmpCharPoint;/***å¤§æ•°å­—å‡æ³•å·²ç»è§£å†³å¥½ç¬¦å·é—®é¢˜ï¼Œç›´æ¥è¿”å›ç­”æ¡ˆ***/
 				break;
 			case 2:
-				/**ÕıÊı¼Ó¸ºÊıÔËËã ºÍ ¸ºÊı¼ÓÕıÊıÔËËã ¿ÉÒÔ»¯×÷¼õ·¨ÔËËã**/
+				/**æ­£æ•°åŠ è´Ÿæ•°è¿ç®— å’Œ è´Ÿæ•°åŠ æ­£æ•°è¿ç®— å¯ä»¥åŒ–ä½œå‡æ³•è¿ç®—**/
 				if(flag1 && !flag2)
 				{
 					tmpCharPoint=bigNumCompute(shu1,shu2,true,1,0,NULL);
-					tmpCharPoint[0]='-';/***ÈôÊÇ¸º¼õÕıÔËËã£¬Ôò½á¹ûµÄ·ûºÅ»¹ÊÇ¸ººÅ***/
+					tmpCharPoint[0]='-';/***è‹¥æ˜¯è´Ÿå‡æ­£è¿ç®—ï¼Œåˆ™ç»“æœçš„ç¬¦å·è¿˜æ˜¯è´Ÿå·***/
 				}
 				else
 				{
@@ -146,14 +222,10 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 		}
 	}
 	else if(flag1 && flag2)
-	{/**¼õ·¨£¬¸º¸ºÏà¼õ£¬×ª³ÉÕı¼õÕı;³Ë·¨ºÍ³ı·¨£¬¸º¸ºµÃÕı£¬ÎŞĞè¸Ä±ä³õÊ¼Êı¾İ**/
+	{/**å‡æ³•ï¼Œè´Ÿè´Ÿç›¸å‡ï¼Œè½¬æˆæ­£å‡æ­£;ä¹˜æ³•å’Œé™¤æ³•ï¼Œè´Ÿè´Ÿå¾—æ­£ï¼Œæ— éœ€æ”¹å˜åˆå§‹æ•°æ®**/
 		if(mode==2)
 			return bigNumCompute(shu2,shu1,false,2,0,NULL);
 	}
-	int minSize=0,startPoint;
-	/*startPoint¼ÇÂ¼¡°½á¹û¡±ÀïµÄĞ¡ÊıµãµÄÏÂ±ê£¬Ä¬ÈÏÊÇ´ËÏÂ±êµÄºóÒ»Î»*/
-	char *result,*buff,zeroCopy[2]={'0','\0'},*yu2;
-	bool tmpBool,is_divided;
 	snum s1,s2,tmpSnum,*yu=NULL;
 	s1.is_positive = s2.is_positive = true;
 	if(flag1)
@@ -162,165 +234,134 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 		s2.is_positive = false;
 	while(shu1[++i]!='\0');
 	while(shu2[++i2]!='\0');
-	/**************½»»»¿Õ¼ä£¬·½±ãÉè¼Æ****************/
+	/**************äº¤æ¢ç©ºé—´ï¼Œæ–¹ä¾¿è®¾è®¡****************/
 	if(mode == 2)
 	{
-		if(judgeSmallerNum(shu1,shu2,i-1,i2-1))/*Ä¬ÈÏshu1Êı×Ö×î´ó*/
-		{/*Èç¹ûshu2Êı×Ö¸ü´ó£¬Ôò½»»»Ãû³Æ*/
+		if(judgeSmallerNum(shu1,shu2,i-1,i2-1))/*é»˜è®¤shu1æ•°å­—æœ€å¤§*/
+		{/*å¦‚æœshu2æ•°å­—æ›´å¤§ï¼Œåˆ™äº¤æ¢åç§°*/
 			charPtrSwap(&shu1,&shu2);
-			is_positive = false;/*½á¹ûÈ¡¸º*/
+			charPtrSwap(&shu1src,&shu2src);
+			is_positive = false;/*ç»“æœå–è´Ÿ*/
 		}
 	}
 	else if(mode == 3)
 	{
 		if(i < i2)
+		{
 			charPtrSwap(&shu1,&shu2);
+			charPtrSwap(&shu1src,&shu2src);
+		}
 	}
 	s1.shuZi = shu1;
 	s2.shuZi = shu2;
 	analyzeNum(&s1,-1);
 	analyzeNum(&s2,-1);
-	/**¼ì²éÊÇ·ñÓĞÊı×ÖÎªÁã**/
+	/**æ£€æŸ¥æ˜¯å¦æœ‰æ•°å­—ä¸ºé›¶**/
 	if(mode == 3 || mode == 4)
 	{
 		if( (s1.intIsZero && s1.xsIsZero) || (s2.intIsZero && s2.xsIsZero) )
 		{
-			is_positive = true;/**×Ü²»ÄÜ³öÏÖ¡°¸ºÁã¡±µÄÇé¿ö°É**/
-			/**Èô³ıÊıÎªÁã**/
+			is_positive = true;/**æ€»ä¸èƒ½å‡ºç°â€œè´Ÿé›¶â€çš„æƒ…å†µå§**/
+			/**è‹¥é™¤æ•°ä¸ºé›¶**/
 			if(mode == 4)
 			{
 				free(shu2);
-				/**¼ì²é³ıÊıÊÇ·ñÎªÁã**/
+				/**æ£€æŸ¥é™¤æ•°æ˜¯å¦ä¸ºé›¶**/
 				if(s2.intIsZero && s2.xsIsZero)
 				{
 					tmpCharPoint = (char *)malloc(sizeof(char)*8);
 					if(tmpCharPoint == NULL)
 						exit(444);
-					strcpy(tmpCharPoint,"error!");/**ÄÇ¾ÍÖ±½Ó±¨´í£¬²»ÓÃËãÁË**/
+					strcpy(tmpCharPoint,"error!");/**é‚£å°±ç›´æ¥æŠ¥é”™ï¼Œä¸ç”¨ç®—äº†**/
 					free(shu1);
 					return tmpCharPoint;
 				}
-				return shu1;/**ÒÑ¾­×öÁËdropPort´¦Àí£¬Ö±½Ó·µ»Ø±»³ıÊı**/
+				return shu1;/**å·²ç»åšäº†dropPortå¤„ç†ï¼Œç›´æ¥è¿”å›è¢«é™¤æ•°**/
 			}
 		}
 	}
-	/*****************ÔËËã½á¹ûÁÙÊ±´æ´¢¿Õ¼ä³õÊ¼»¯************************/
+	/*****************è¿ç®—ç»“æœä¸´æ—¶å­˜å‚¨ç©ºé—´åˆå§‹åŒ–************************/
 	minSize = getMaxInt(s1.intLength, s2.intLength) + \
 		getMaxInt(s1.fractionLength, s2.fractionLength) + \
-		precision + 2 ;/*Ô¤Áô2Î»¿Õ¼ä×ö½øÎ»´¦Àí*/
+		precision + 2 ;/*é¢„ç•™2ä½ç©ºé—´åšè¿›ä½å¤„ç†*/
 	result=(char *)malloc(sizeof(char)*(minSize +1));
 	if(result == NULL)
 		exit(444);
-	for(i=0;i<minSize;i++)
-		result[i]=0;
-	result[i]='\0';
-	/**ÌáÇ°¸ã¶¨ÓàÊı¿Õ¼ä´óĞ¡µÄÎÊÌâ£¬Í¬Ê±×öºÃ±ØÒªµÄ³õÊ¼»¯¹¤×÷**/
+	memset(result,0,minSize);
+	result[minSize]='\0';
+	/**åˆå§‹åŒ–ä½™æ•°ç©ºé—´**/
 	if(mode == 4)
 	{
-		is_divided = false;
-		startPoint = -1;
-		tmpInt = s1.intLength -1;
-		if(s1.intIsZero && s1.xsd != -1)
-		{
-			tmpInt = 0;
-			startPoint = 1;
-			s1.xb = 2;
-		}
-		else if( tmpInt > s2.length -1 )
-		{
-			tmpInt = s2.length -1;
-			s1.xb = s2.length ;
-			if(s2.length > s1.length)
-				s1.xb = s1.length;
-		}
+		//memset(result,'\0',minSize);
+		minSize = minSize -2;/**é™¤æ³•ä¸éœ€è¦è®¿é—®è¿›ä½ç©ºé—´**/
+		if(s1.xsd != -1 )
+			minSize++;/**ç”±äº i ä»é›¶å¼€å§‹ï¼Œæ‰€ä»¥è¦æŠŠä¸ªä½æ•°çš„å¾ªç¯ç®—è¿›å»**/
+		result[minSize]='\0';
 		yu = (snum *)malloc(sizeof(snum));
 		if(yu == NULL)
 			exit(444);
-		yu->shuZi = (char *)malloc(sizeof(char)*(s2.length +3));
-		strcpy2(yu->shuZi,s1.shuZi,tmpInt);
+		yu->shuZi = (char *)malloc(sizeof(char)*(s2.length +4));
+		buff = (char *)malloc(sizeof(char)*(s2.length +4));
+		memset(yu->shuZi,'0',s2.length +3);
+		(yu->shuZi)[s2.length +3] = (yu->shuZi)[0]='\0';
+		analyzeNum(yu,-1);
+		yu2 = yu->shuZi;
+		yu->length = 0;
+		//yu2[yu->length++]=shu1[s1.xb++];
+		yu2[yu->length]='\0';
 	}
-	/********************ÔËËã¿ò¼Ü***********************/
+	/********************è¿ç®—æ¡†æ¶***********************/
 	s1.moveOneStep = s2.moveOneStep = is_syn = flag1 = flag2 = false;
 	s1.xb = s1.length -1;
 	s2.xb = s2.length -1;
 	i=minSize-1;
 	if(mode == 4)
-		i = 0;
-	else
-		startPoint = -1 ;
+		s1.xb = i = 0;
 	while(  (!flag1 || !flag2) && i>=0  )
-	{
+	{/*****ä¹˜æ³•å’Œé™¤æ³•éƒ½éœ€è¦éœ€è¦å¼‚æ­¥å¤„ç†*****/
 		if(mode == 3)
-		{/*****³Ë·¨ĞèÒªÒì²½´¦Àí*****/
+		{
 			if(s2.xb < 0)
 				break;
 			i = minSize -1 - (s2.length -1 - s2.xb);
-			if(shu2[s2.xb]=='.')
+			if(s2.shuZi[s2.xb]=='.')
 				s2.xb--;
 		}
 		else if(mode == 4)
-		{	/**ÅĞ¶ÏÓàÊıÊÇ·ñÎªÁã£¬²¢Íê³ÉÖÃÁã**/
-			/*
-			if(readDNum(yu,0)==0)
+		{	/*****å¤„ç†å°æ•°ç‚¹*****/
+			if( s1.shuZi[s1.xb]=='.' )
 			{
-				buff = outputDNum(yu);
-				if(serialZeroCount(buff,yu->length) == yu->length)
-					setZeroDNum(yu);
-			}
-			*/
-			/*******´¦ÀíĞ¡Êıµã******/
-			if( shu1[s1.xb]=='.' )
-			{
-				startPoint=i;
+				startPoint = i;
 				s1.xb++;
 			}
-			yu2 = yu->shuZi;
-			/**ÓÅÏÈÈ·±£±»³ıÊı±È³ıÊı´ó**/
-			/**Èç¹ûÔ­Ê¼±»³ıÊıÃ»ÓĞ¶ÁÍê**/
-			if(!flag1)
-			{	/**Ìø¹ıµÚÒ»´ÎÑ­»·**/
-				if(i > 0)
-				{	/**Èç¹û±»³ıÊıºÍ³ıÊıÎ»ÊıÏàÍ¬**/
-					if( yu->length -1 == s2.intLength -1)
-					{
-						/**Èç¹û±»³ıÊıÊ×Î»Ã»ÓĞ³ıÊı´ó**/
-						if( yu2[0] < shu2[0] )
-						{
-							yu2[yu->length++]=shu1[s1.xb];/**ÄÇ¾Í´ÓÔ­Ê¼±»³ıÊıÀï¶ÁÈëÒ»Î»**/
-							yu2[yu->length]='\0';
-							/* yu->intLength++; ÓàÊı±¾À´¾ÍÊÇÕûÊı£¬lengthºãµÈintLength */
-							s1.moveOneStep = true;
-						}    /**Èç¹û±»³ıÊıÊ×Î»ºÍ³ıÊıÒ»Ñù´ó**/
-						else if (  yu2[0] == shu2[0]  )
-						{
-							/**ÄÇ¾ÍÉîÈë±È¶Ô£¬Èç¹û±»³ıÊıĞ¡ÓÚ³ıÊı**/
-							if(judgeSmallerInt(yu2,shu2,yu->length -1,s2.length -1))
-							{
-								yu2[yu->length++]=shu1[s1.xb];
-								yu2[yu->length]='\0';
-								s1.moveOneStep = true;
-							}
-						}
-					}
-				}
-			}
-			else
+			if( i == minSize || (precision==0 && flag1 && yu2[0]=='0') )
 			{
-				/**³ı·¨²»ĞèÒª·ÃÎÊ½øÎ»¿Õ¼ä**/
-				if( i >= minSize-3 || serialZeroCount(yu2,yu->length -1)== yu->length)
-				{
-					printf("\n×îÖÕÓàÊı£º%s\n",yu2);
-					free(shu1);
-					free(shu2);
-					break;
-				}
-				yu2[yu->length++]='0';
-				yu2[yu->length]='\0';/**Ô­Ê¼±»³ıÊı¶ÁÍêÁË£¬Ö»ÄÜ²¹ÁãÁË**/
+				printf("\næœ€ç»ˆä½™æ•°ï¼š%s\n",yu2);
+				break;
 			}
-			
+			if(yu2[0]=='0')
+				yu->length = 0;
+			yu2[yu->length++]=s1.shuZi[s1.xb];
+			yu2[yu->length]='\0';
+			/**åˆ¤æ–­åŸå§‹è¢«é™¤æ•°æ˜¯å¦è¯»å®Œ**/
+			if(!flag1)
+			{	/**å¦‚æœè¯»å®Œäº†**/
+				if(s1.xb +1 == s1.length)
+				{
+					flag1 = true;
+					s1.shuZi = zeroCopy;/**æŠ„é›¶å¤„ç†**/
+					s1.xb = 0;
+					if(startPoint == -1)
+						startPoint = i+1;
+				}
+				else
+				{
+					s1.xb++;
+				}
+			}
 		}
 		else
-		{/*****Í¬²½´¦Àí******/
+		{	/*****åŒæ­¥å¤„ç†*****/
 			if(!is_syn)
 			{
 				if( !flag1 && !flag2)
@@ -328,14 +369,14 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 					if(s1.fractionLength > s2.fractionLength)
 					{
 						if( s1.fractionLength - (s1.length -1 - s1.xb) == s2.fractionLength )
-						{/*µ±Á½¸öÊı×ÖµÄÏÂ±êÓë¸÷×ÔµÄĞ¡Êıµã¾àÀëÏàµÈµÄÊ±ºò£¬½áÊø³­Áã´¦Àí£¬Í¬²½½øĞĞÔËËã*/
-							shu2 = s2.shuZi;
+						{/*å½“ä¸¤ä¸ªæ•°å­—çš„ä¸‹æ ‡ä¸å„è‡ªçš„å°æ•°ç‚¹è·ç¦»ç›¸ç­‰çš„æ—¶å€™ï¼Œç»“æŸæŠ„é›¶å¤„ç†ï¼ŒåŒæ­¥è¿›è¡Œè¿ç®—*/
+							s2.shuZi = shu2src;
 							s2.xb = s2.length -1;
 							is_syn=true;
 						}
 						else
 						{
-							shu2 = zeroCopy;
+							s2.shuZi = zeroCopy;
 							s2.xb = 0;
 							s1.moveOneStep = true;
 						}
@@ -344,19 +385,19 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 					{
 						if( s2.fractionLength - (s2.length -1 - s2.xb) == s1.fractionLength )
 						{
-							shu1 = s1.shuZi;
+							s1.shuZi = shu1src;
 							s1.xb = s1.length -1;
 							is_syn=true;
 						}
 						else
 						{
-							shu1 = zeroCopy;
+							s1.shuZi = zeroCopy;
 							s1.xb = 0;
 							s2.moveOneStep = true;
 						}
 					}
 					else
-					{/*ÕûÊıÔËËã»òĞ¡ÊıÎ»ÊıÏàÍ¬£¬Ö±½ÓÍ¬²½*/
+					{/*æ•´æ•°è¿ç®—æˆ–å°æ•°ä½æ•°ç›¸åŒï¼Œç›´æ¥åŒæ­¥*/
 						is_syn=true;
 					}
 				}
@@ -368,10 +409,10 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 						s1.moveOneStep = true;
 				}
 			}
-			/*******´¦ÀíĞ¡Êıµã******/
+			/*******å¤„ç†å°æ•°ç‚¹******/
 			if( shu1[s1.xb]=='.' || shu2[s2.xb]=='.' )
 			{
-				startPoint=i;
+				startPoint = i +1;
 				if(s1.xsd != -1)
 					s1.xb--;
 				if(s2.xsd != -1)
@@ -379,38 +420,74 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 			}
 		}
 		
-		/********************ÔËËãºËĞÄ***********************/
+		/*****è¿ç®—æ ¸å¿ƒ*****/
 		if(mode != 4)
 		{
 			plusUnit(&s1,&s2,result,&i,mode);
 		}
 		else
-		{
-			/**Èç¹û±»³ıÊı³¤¶È±È³ıÊı³¤¶È´ó**/
-			if(yu->length > s2.length)
+		{	/**å¦‚æœè¢«é™¤æ•°ä½æ•°æ¯”é™¤æ•°ä½æ•°å°‘**/
+			if(yu->length < s2.length)
 			{
+				result[i]=0;/**è¢«é™¤æ•°å°äºé™¤æ•°ï¼Œå•†ä¸ºé›¶**/
+			}	 /**å¦‚æœè¢«é™¤æ•°ä½æ•°å’Œé™¤æ•°ä½æ•°ç›¸ç­‰**/
+			else if( yu->length == s2.length && \
+			judgeSmallerInt(yu2,s2.shuZi,yu->length -1,s2.length -1) )
+			{	/**é‚£å°±çœ‹çœ‹è¢«é™¤æ•°æ˜¯å¦æ›´å°**/
+				result[i]=0;
+			}
+			else
+			{
+				if(yu->length == s2.length)
+				{
+					result[i] = (yu2[0] - '0') / (s2.shuZi[0] - '0');
+				}
+				else
+				{	/**å¦‚æœè¢«é™¤æ•°ä½æ•°æ¯”é™¤æ•°ä½æ•°å¤šï¼ˆæœ€å¤šä¹Ÿå°±å¤šä¸€ä½ï¼‰**/
+					result[i] = (yu2[0] - '0')*jinZhi + yu2[1] - '0';
+					result[i] = result[i] / (s2.shuZi[0] - '0');
+				}
+				oneCharStr[0] = result[i] + '0';
+				strcpy(buff,s2.shuZi);
+				justCopyResult(buff,buff,oneCharStr,3);
+				justCopyResult(buff,yu2,buff,2);
+				while(buff[0]=='-')
+				{
+					result[i]--;
+					if(result[i]!=0)
+					{
+						oneCharStr[0] = result[i] + '0';
+						strcpy(buff,s2.shuZi);
+						justCopyResult(buff,buff,oneCharStr,3);
+						justCopyResult(buff,yu2,buff,2);
+					}
+					else
+					{
+						break;
+					}
+				}
+				strcpy(yu2,buff);
+				analyzeNum(yu,-1);
 			}
 			i++;
 		}
-		
-				
-		/**********************ºóÆÚÍ¬²½´¦Àí*********************/
-		if(s1.moveOneStep)
-		{
-			s1.xb--;
-			if(s1.xb == -1)
-				flag1=true;
-			s1.moveOneStep = false;
-		}
-		if(s2.moveOneStep)
-		{
-			s2.xb--;
-			if(s2.xb == -1)
-				flag2=true;
-			s2.moveOneStep = false;
-		}
+		/*****åæœŸåŒæ­¥å¤„ç†*****/
 		if(mode == 1 || mode == 2)
 		{
+			if(s1.moveOneStep)
+			{
+				s1.xb--;
+				if(s1.xb == -1)
+					flag1=true;
+				s1.moveOneStep = false;
+			}
+			if(s2.moveOneStep)
+			{
+				s2.xb--;
+				if(s2.xb == -1)
+					flag2=true;
+				s2.moveOneStep = false;
+			}
 			if(is_syn)
 			{
 				if(s1.xb > 0)
@@ -419,7 +496,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 				}
 				else
 				{
-					shu1=zeroCopy;
+					s1.shuZi = zeroCopy;
 					flag1=true;
 					is_syn=false;
 				}
@@ -429,15 +506,15 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 				}
 				else
 				{
-					shu2=zeroCopy;
+					s2.shuZi = zeroCopy;
 					flag2=true;
 					is_syn=false;
 				}
 			}
-			i--;/**ÒÆ¶¯¡°½á¹û¡±µÄÏÂ±ê**/
+			i--;/**ç§»åŠ¨â€œç»“æœâ€çš„ä¸‹æ ‡**/
 		}
 	}
-	/********************ÕûÀí×îÖÕÊı¾İ**********************/
+	/********************æ•´ç†æœ€ç»ˆæ•°æ®**********************/
 	if(mode == 3)
 	{
 		if(s1.xsd != -1 || s2.xsd != -1)
@@ -450,15 +527,27 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 			startPoint = minSize -1 - tmpInt;
 		}
 	}
+	else if(mode == 4)
+	{
+		minSize = i;
+		i=0;
+		if(remainder != NULL)
+			(*remainder) = yu2;
+		else
+			free(yu2);
+		free(buff);
+		free(shu1src);
+		free(shu2src);
+	}
 	if(i<0)
 		i=0;
-	while(result[i]==0 && startPoint != i && i < minSize -1 )
-		i++;/***³ıÈ¥ÕûÊı²¿·ÖµÄ¸ßÎ»Áã***/
+	while(result[i]==0 && i+1 != startPoint && i < minSize -1 )
+		i++;/***é™¤å»æ•´æ•°éƒ¨åˆ†çš„é«˜ä½é›¶***/
 	tmpSnum.length = minSize;
-	tmpSnum.xb = i  ;
+	tmpSnum.xb = i;
 	tmpSnum.shuZi = NULL;
 	tmpSnum.xsd = startPoint;
-	/*******************×ª»¯´ğ°¸´æ´¢¿Õ¼ä***********************/
+	/*******************è½¬åŒ–ç­”æ¡ˆå­˜å‚¨ç©ºé—´***********************/
 	if(headspace || !is_positive)
 		covertInt2Char(result,&tmpSnum,true);
 	else
@@ -477,7 +566,7 @@ void plusUnit(snum *s1,snum *s2,char *result,int *i,int mode)
 			result[*i]=result[*i]+shu1[s1->xb]-'0'+shu2[s2->xb]-'0';
 			if(result[*i] > jinZhi -1)
 			{
-				result[*i-1] += result[*i] / jinZhi;
+				result[(*i)-1] += result[*i] / jinZhi;
 				result[*i] = result[*i] % jinZhi;
 			}
 			break;
@@ -485,7 +574,7 @@ void plusUnit(snum *s1,snum *s2,char *result,int *i,int mode)
 			result[*i]=result[*i]+shu1[s1->xb]-shu2[s2->xb];
 			if(result[*i] < 0)
 			{
-				result[*i-1]--;
+				result[(*i)-1]--;
 				result[*i] = result[*i] + jinZhi;
 			}
 			break;
@@ -545,16 +634,17 @@ void covertInt2Char(char *result,snum *aim,bool headspace)
 	int i,i2;
 	char *charResult=NULL;
 	if(headspace)
-		charResult=(char *)malloc(sizeof(char)*(aim->length - aim->xb + 3) );
+		i = aim->length - aim->xb + 3;
 	else
-		charResult=(char *)malloc(sizeof(char)*(aim->length - aim->xb + 2) );
+		i = aim->length - aim->xb + 2;
+	charResult=(char *)malloc(sizeof(char)*i );
 	if(charResult == NULL)
 		exit(444);
 	for( i = aim->xb, i2 = 0 ; i < aim->length ; i++ )
 	{
 		if(i2==0 && headspace)
-			charResult[i2++]=' ';//Ô¤Áô·ûºÅÎ»
-		if(i == aim->xsd + 1)
+			charResult[i2++]=' ';//é¢„ç•™ç¬¦å·ä½
+		if(i == aim->xsd)
 			if(aim->xsd != -1)
 				charResult[i2++]='.';
 		charResult[i2++]=(char)(result[i]+'0');
@@ -564,84 +654,17 @@ void covertInt2Char(char *result,snum *aim,bool headspace)
 	aim->shuZi = charResult;
 	return;
 }
-void reallocStr(char **aim,int size,int startP,int endP)
+void justCopyResult(char *result,char *num1,char *num2,int mode)
 {
-	int i;
-	char *c=(char *)malloc( sizeof(char) * size );
-	if(c == NULL)
-		exit(444);
-	if( endP - startP < 0)
+	if(result == NULL || \
+	num1 == NULL || \
+	num2 == NULL || \
+	mode <0 || mode >3 )
 		exit(250);
-	for(i=0 ; i < size ; i++)
-		c[i] = (*aim)[startP + i];
-	c[i]='\0';
-	free(*aim);
-	*aim = c;
+	char *buff = bigNumCompute(num1,num2,false,mode,0,NULL);
+	strcpy(result,buff);
+	free(buff);
 	return;
-}
-int dropPort(char **a,char **b)
-{
-	int moveStep=0;
-	char *c=NULL;
-	snum s1,s2;
-	s1.shuZi = *a;
-	s2.shuZi = *b;
-	analyzeNum(&s2,-1);
-	analyzeNum(&s1,-1);
-	c = (char *)malloc(sizeof(char)*s1.length );
-	if( c == NULL )
-		exit(444);
-	strcpy(c,s1.shuZi);
-	(*a)=c;
-	c = (char *)malloc(sizeof(char)*s2.length );
-	if( c == NULL )
-		exit(444);
-	strcpy(c,s2.shuZi);
-	(*b)=c;
-	if( s2.xsd != -1 )
-	{
-		if(s2.xsIsZero)
-		{
-			c = (char *)realloc( (*b) , sizeof(char)*(s2.length - s2.fractionLength +1 ) );
-			if( c == NULL )
-				exit(444);
-			(*b) = c;
-			strcpy2(*b,s2.shuZi,s2.xsd);
-			(*b)[s2.xsd]='\0';
-			return 0;
-		}
-		if( s2.fractionLength > s1.fractionLength )
-		{
-
-			c = (char *)realloc((*a), sizeof(char)*(s1.length + s2.fractionLength - s1.fractionLength ) );
-			if( c == NULL )
-				exit(444);
-			(*a) = c;
-			s1.xb = s1.length;
-			if(s1.xsd == -1)
-			{
-				s1.xsd = s1.length ;
-				(*a)[s1.xsd]='.';
-				s1.xb++;
-			}
-			for(  ; s1.xb < s1.length + s2.fractionLength - s1.fractionLength ; s1.xb++ )
-				c[s1.xb]='0';
-			c[s1.xb]='\0';
-			(*a) = c;
-		}
-		s1.xb = s1.xsd;
-		s2.xb = s2.xsd;
-		while( s2.xb < s2.length )
-		{
-			charSwap(&((*a)[s1.xb]),&((*a)[s1.xb+1]));
-			charSwap(&((*b)[s2.xb]),&((*b)[s2.xb+1]));
-			s1.xb++;
-			s2.xb++;
-			moveStep++; 
-		}
-		(*a)[s1.xb + 1]='\0';
-	}
-	return moveStep;
 }
 int serialZeroCount(char *shuZi,int s1end)
 {
@@ -667,13 +690,11 @@ void jumpUselessChar(char **shuZi)
 {
 	int i=0;
 	while((*shuZi)[i]==' ')
-		(*shuZi)++;/***³ıÈ¥¿Õ¸ñ***/
+		(*shuZi)++;/***é™¤å»ç©ºæ ¼***/
 	i=serialZeroCount(*shuZi,-1);
-	/***³ıÈ¥ÕûÊı²¿·ÖµÄ¸ßÎ»Áã***/
-	if(i == 1)
-		return;
-	if((*shuZi)[i]=='.')
-		(*shuZi)=(*shuZi) + i -1; /**ÖÁÉÙ±£ÁôÕûÊı²¿·ÖµÄ¸öÎ»Êı**/
+	/***é™¤å»æ•´æ•°éƒ¨åˆ†çš„é«˜ä½é›¶***/
+	if((*shuZi)[i]=='.' || (*shuZi)[i]=='\0')
+		(*shuZi)=(*shuZi) + i -1; /**è‡³å°‘ä¿ç•™æ•´æ•°éƒ¨åˆ†çš„ä¸ªä½æ•°**/
 	else
 		(*shuZi)=(*shuZi) + i ;
 	return;
@@ -734,7 +755,7 @@ char *getZeroStr(int fractionLength)
 	return tmpCharPoint;
 }
 bool judgeSmallerNum(char num1[],char num2[],int s1end,int s2end)
-{/**·µ»ØfalseÒâÎ¶×Ånum1>=num2**/
+{/**è¿”å›falseæ„å‘³ç€num1>=num2**/
 	snum s1,s2;
 	jumpUselessChar(&num1);
 	jumpUselessChar(&num2);
@@ -745,16 +766,16 @@ bool judgeSmallerNum(char num1[],char num2[],int s1end,int s2end)
 	if(s1.intLength < s2.intLength)
 		return true;
 	if(s1.intLength == s2.intLength)
-	{/**´ó¼ÒÕûÊı²¿·ÖÎ»ÊıÏàÍ¬**/
+	{/**å¤§å®¶æ•´æ•°éƒ¨åˆ†ä½æ•°ç›¸åŒ**/
 		if(judgeSmallerInt(num1,num2,s1.intLength -1,s2.intLength -1))
-			return true;/**Èç¹ûÕûÊıĞ¡£¬Ğ¡Êı¾Í²»ĞèÒª±È½ÏÁË**/
+			return true;/**å¦‚æœæ•´æ•°å°ï¼Œå°æ•°å°±ä¸éœ€è¦æ¯”è¾ƒäº†**/
 		if(strcmp2(num1,num2,s1.intLength-1))
 		{
 			if(!s2.xsIsZero)
 			{
 				if(s1.xsIsZero)
 					return true;
-				return judgeSmallerXS(num1 + s1.xsd +1 , num2 + s2.xsd +1 ,s1.fractionLength , s2.fractionLength );/**¶¼ÓĞĞ¡Êı£¬Ò»¾ö¸ßÏÂ**/
+				return judgeSmallerXS(num1 + s1.xsd +1 , num2 + s2.xsd +1 ,s1.fractionLength , s2.fractionLength );/**éƒ½æœ‰å°æ•°ï¼Œä¸€å†³é«˜ä¸‹**/
 			}
 		}
 	}
@@ -766,11 +787,15 @@ bool judgeSmallerInt(char num1[],char num2[],int s1end,int s2end)
 		return false;
 	if(s1end < s2end)
 		return true;
-	int i;
+	int i;/**æ‰§è¡Œåˆ°è¿™ï¼Œè¯´æ˜ä½æ•°ä¸€è‡´**/
 	for(i=0; i <= s1end ; i++)
+	{
 		if(num1[i] < num2[i])
 			return true;
-	return false;
+		if(num1[i] > num2[i])
+			return false;
+	}
+	return false;/**æ‰§è¡Œåˆ°è¿™ï¼Œè¯´æ˜ä¸¤æ•°ç›¸ç­‰ï¼Œä¸è¿‡num1ç¡®å®ä¸æ¯”num2å¤§**/
 }
 bool judgeSmallerXS(char num1[],char num2[],int s1end,int s2end)
 {
@@ -804,27 +829,29 @@ void testSystem(char *a,char *b)
 {
 	int i,i2;
 	char *tes[3]={"999999","0.000001"};
-	char *item[19][3]={ \
-		{"12","12"} , {"12","11"} , \
-		{"12","1.2"} , {"1.2","1.2"} , \
-		{"0","0"} , {"0","-1.1"} , \
-		{"-1.1","0"} , {"-1.1","11"} , \
-		{"-11","-1.1"} , {"0.001","10000"} , \
+	char *item[23][3]={ {"12","12"} , \
+		{"12","11"} , {"12","1.2"} , \
+		{"1.2","1.2"} , {"0","0"} , \
+		{"0","-1.1"} , {"-1.1","0"} , \
+		{"-1.1","11"} , {"-11","-1.1"} , \
+		{"0.001","10000"} , {"10000","0.001"} , \
 		{"999999","0.000001"} , {"0.02","0.003"} , \
 		{"00.03","000.005"} , {"-00.03","-000.005"} , \
-		{"0.0000","6"} , {"7","0.0000"}  \
+		{"0.0000","6"} , {"7","0.0000"} , \
+		{"355","113"} , {"22","7"} , \
+		{"52163","16604"}  \
 	};
 	printf("+----+--------+--------+\n");
 	printf("|%-4s|%-8s|%-8s|\n","No.","Num1","Num2");
 	printf("+----+--------+--------+\n");
-	for(i=0;i<16;i++)
+	for(i=0;i<20;i++)
 		printf("|%-4d|%-8s|%-8s|\n",i+1,item[i][0],item[i][1]);
 	printf("+----+--------+--------+\n");
-	/*¼Æ»®Éè¼Æ³É¿ÉÒÔ×Ô¶¯Ñ­»·²âÊÔÈ«²¿Êı¾İµÄtestSystem*/
+	/*è®¡åˆ’è®¾è®¡æˆå¯ä»¥è‡ªåŠ¨å¾ªç¯æµ‹è¯•å…¨éƒ¨æ•°æ®çš„testSystem*/
 	printf("Please enter a choice:");
 	scanf("%d",&i);
 	i--;
-	if(i>15 || i<0)
+	if(i>19 || i<0)
 		exit(250);
 	strcpy(a,item[i][0]);
 	strcpy(b,item[i][1]);
