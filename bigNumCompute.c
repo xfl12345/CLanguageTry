@@ -66,10 +66,9 @@ int main(void)
 	int i,precision=0;
 	char shu1[200],shu2[200],*result=NULL;
 	/*puts(result=getZeroStr(6));
-	printf("strSize=%d\n",_msize(result));*/
+	printf("strSize=%d\n",_msize(result));
 	testSystem(shu1,shu2);
-	i=4;precision=500;
-	/*
+	i=4;precision=500;*/
 	printf("Please choose a mode:");
 	scanf("%d",&i);
 	if(i == 4)
@@ -84,7 +83,6 @@ int main(void)
 	gets(shu1);
 	printf("Please input num2:");
 	gets(shu2);
-	*/
 	printf("\n\n");
 	result=bigNumCompute(shu1,shu2,false,i,precision,NULL);
 	while(result[++i]!='\0');
