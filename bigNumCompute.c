@@ -96,6 +96,7 @@ int main(void)
 	printf("\n\n");
 	//result = getPI();
 	result=bigNumCompute(shu1,shu2,false,i,precision,NULL);
+	i=0;
 	while(result[++i]!='\0');
 	printf("Result=%s\n",result);
 	printf("\nstrlen=%d\n",i);
