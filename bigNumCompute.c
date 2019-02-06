@@ -2,6 +2,7 @@
 #include<stdlib.h>
 #include<stdbool.h>
 #include<string.h>
+#define preOfPI 49
 struct num{
 	char *shuZi;
 	int xsd;    /*xsd即小数点，记录小数点的下标 (radix point)*/
@@ -19,6 +20,7 @@ typedef struct num    snum;
 
 /**定义进制，范围应在char的大小以内**/
 int jinZhi = 10;  /*此处定义为十进制*/
+
 
 /*mode=1:plus,mode=2:minus,mode=3:multiply,mode=4:divide;
 *模式1-4分别为加减乘除
@@ -53,22 +55,40 @@ void charPtrSwap(char **a,char **b);
 void strcpy2(char *a,char *b,int s1end);
 /*getMaxInt顾名思义，即获取a,b两者中最大的值*/
 int getMaxInt(int a,int b);
-char *getZeroStr(int fractionLength);
+int justGetNum(void);
+int limitInputNum(int min,int max);
 
 bool judgeSmallerNum(char num1[],char num2[],int s1end,int s2end);
 bool judgeSmallerInt(char num1[],char num2[],int s1end,int s2end);
 bool judgeSmallerXS(char num1[],char num2[],int s1end,int s2end);
 bool strcmp2(char str1[],char str2[],int end);
 void testSystem(char *a,char *b);
+/*Have not finished yet...*/
+char *getPI(void);
 
 int main(void)
 {
 	int i,precision=0;
-	char shu1[200],shu2[200],*result=NULL;
+	char *shu1,*shu2,*result=NULL;
 	/*puts(result=getZeroStr(6));
 	printf("strSize=%d\n",_msize(result));
 	testSystem(shu1,shu2);
 	i=4;precision=500;*/
+	printf("Please define the length of Num:");
+	i = limitInputNum(1,2100000000);
+	shu1 = (char *)malloc(sizeof(char)*(i+1));
+	shu2 = (char *)malloc(sizeof(char)*(i+1));
+	if(shu1 == NULL || shu2 == NULL)
+	{
+		puts("Sorry!Yours mechine did not have enough memery!");
+		puts("Program terminated!");
+		exit(444);
+	}
+	printf("Please input Num1:");
+	scanf("%s",shu1);
+	printf("Please input Num2:");
+	scanf("%s",shu2);
+	printf("\nNumber init is completed!!!\n\n");
 	printf("Please choose a mode:");
 	scanf("%d",&i);
 	if(i == 4)
@@ -78,28 +98,22 @@ int main(void)
 	}
 	if(precision<0 || i<0 || i>4)
 		exit(250);
-	getchar();
-	printf("Please input num1:");
-	gets(shu1);
-	printf("Please input num2:");
-	gets(shu2);
 	printf("\n\n");
+	//result = getPI();
 	result=bigNumCompute(shu1,shu2,false,i,precision,NULL);
 	while(result[++i]!='\0');
-	puts(result);
+	printf("Result=%s\n",result);
 	printf("\nstrlen=%d\n",i);
+	getchar();
 	/*printf("strSize=%d\n",_msize(result));*/
-	/*
-	for(i=0;result[i]!='\0';i++)
-		printf("%c",result[i]);
-	*/
 	return 0;
 }
 char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precision,char **remainder)
 {
-	int i,i2,tmpInt,minSize=0,moveStep=0;;
+	int i,i2;
+	int tmpInt,minSize=0,moveStep=0;
 	bool flag1,flag2;
-	bool is_syn=false,is_positive=true;
+	bool is_syn=false,is_positive=true,need_roundUp=false;
 	char *tmpCharPoint,*shu1src,*shu2src;
 	/*startPoint记录“结果”里的小数点的下标，
 	*但不同算法，由于i的移动方向不一样
@@ -282,7 +296,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 	minSize = getMaxInt(s1.intLength, s2.intLength) + \
 		getMaxInt(s1.fractionLength, s2.fractionLength) + \
 		precision + 2 ;/*预留2位空间做进位处理*/
-	result=(char *)malloc(sizeof(char)*(minSize +1));
+	result=(char *)malloc(sizeof(char)*(minSize +8));
 	if(result == NULL)
 		exit(444);
 	memset(result,0,minSize);
@@ -290,20 +304,21 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 	/**初始化余数空间**/
 	if(mode == 4)
 	{
-		//memset(result,'\0',minSize);
-		minSize = minSize -2;/**除法不需要访问进位空间**/
-		if(s1.xsd != -1 )
-			minSize++;/**由于 i 从零开始，所以要把个位数的循环算进去**/
+		minSize--;  /**只留多一位做四舍五入判断**/
+		if(s1.xsd == -1 )
+			minSize--;
 		result[minSize]='\0';
 		yu = (snum *)malloc(sizeof(snum));
 		if(yu == NULL)
 			exit(444);
-		yu->shuZi = (char *)malloc(sizeof(char)*(s2.length +4));
-		buff = (char *)malloc(sizeof(char)*(s2.length +4));
-		memset(yu->shuZi,'0',s2.length +3);
-		(yu->shuZi)[s2.length +3] = (yu->shuZi)[0]='\0';
-		analyzeNum(yu,-1);
+		yu->shuZi = (char *)malloc(sizeof(char)*(s2.length +8));
+		buff = (char *)malloc(sizeof(char)*(s2.length +8));
 		yu2 = yu->shuZi;
+		if(yu2 == NULL || buff == NULL)
+			exit(444);
+		memset(yu2,'\0',s2.length +3);
+		memset(buff,'\0',s2.length +3);
+		analyzeNum(yu,-1);
 		yu->length = 0;
 		//yu2[yu->length++]=shu1[s1.xb++];
 		yu2[yu->length]='\0';
@@ -334,7 +349,10 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 			}
 			if( i == minSize || (precision==0 && flag1 && yu2[0]=='0') )
 			{
-				printf("\n最终余数：%s\n",yu2);
+				//printf("\n最终余数：%s\n",yu2);
+				if(yu2[0]!='0' && result[i-1] >= 5)
+					need_roundUp = true;
+				minSize--;/**丢弃用于判断四舍五入的最后一位**/
 				break;
 			}
 			if(yu2[0]=='0')
@@ -529,10 +547,6 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 	{
 		minSize = i;
 		i=0;
-		if(remainder != NULL)
-			(*remainder) = yu2;
-		else
-			free(yu2);
 		free(buff);
 		free(shu1src);
 		free(shu2src);
@@ -547,9 +561,40 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 	tmpSnum.xsd = startPoint;
 	/*******************转化答案存储空间***********************/
 	if(headspace || !is_positive)
-		covertInt2Char(result,&tmpSnum,true);
+		flag1 = true;
 	else
-		covertInt2Char(result,&tmpSnum,false);
+		flag1 = false;
+	covertInt2Char(result,&tmpSnum,flag1);
+
+	if(mode == 4)
+	{
+		if(need_roundUp)
+		{
+			i = 0;
+			while(tmpSnum.shuZi[++i]!='\0');
+			buff = (char *)malloc(sizeof(char)*(i+5));
+			if(buff == NULL)
+				exit(444);
+			memset(buff,'0',i+4);
+			buff[i-1]='1';
+			buff[i]='\0';
+			if(startPoint != -1)
+				buff[1]='.';
+			tmpCharPoint = bigNumCompute(tmpSnum.shuZi,buff,flag1,1,0,NULL);
+			free(buff);
+			free(tmpSnum.shuZi);
+			tmpSnum.shuZi = tmpCharPoint;
+		}
+		if(remainder != NULL)
+		{
+			(*remainder) = yu->shuZi;
+		}
+		else
+		{
+			free(yu->shuZi);
+			free(yu);
+		}
+	}
 	if(!is_positive)
 		tmpSnum.shuZi[0]='-';
 	return tmpSnum.shuZi;
@@ -600,7 +645,8 @@ void analyzeNum(snum *num,int limitSize)
 	char *shuZi=NULL;
 	if(num == NULL)
 		exit(250);
-	shuZi = num->shuZi;num->fractionLength = 0;
+	shuZi = num->shuZi;
+	num->fractionLength = 0;
 	num->xsd = -1;
 	num->intIsZero = false;
 	num->xsIsZero = true;
@@ -647,7 +693,7 @@ void covertInt2Char(char *result,snum *aim,bool headspace)
 				charResult[i2++]='.';
 		charResult[i2++]=(char)(result[i]+'0');
 	}
-	free(result);
+	//free(result);
 	charResult[i2]='\0';
 	aim->shuZi = charResult;
 	return;
@@ -732,25 +778,37 @@ int getMaxInt(int a,int b)
 {
 	return a>b?a:b;
 }
-char *getZeroStr(int fractionLength)
+int justGetNum(void)
 {
-	char *tmpCharPoint = NULL;
-	int i = 2;
-	if(fractionLength > 0)
-		i = 3 + fractionLength;
-	tmpCharPoint = (char *)malloc(sizeof(char)*i);
-	if(tmpCharPoint == NULL)
-		exit(444);
-	tmpCharPoint[0]='0';
-	i=1;
-	if(fractionLength > 0)
+	char b[50];
+	int i,result;
+	while(1)
 	{
-		tmpCharPoint[1]='.';
-		for(i=2; i-2 < fractionLength ; i++)
-			tmpCharPoint[i]='0';
+		scanf("%s",b);
+		for(i=0,result=0;b[i]!='\0';i++)
+		{
+			if( !(b[i]>='0'&&b[i]<='9'))
+				break;
+			result=b[i]-'0'+result*10;
+		}
+		if(b[i]=='\0' && i!=0)
+			break;
+		printf("\n请输入一个数字！\n");
+		printf("请输入：");
 	}
-	tmpCharPoint[i]='\0';
-	return tmpCharPoint;
+	return result;
+}
+int limitInputNum(int min,int max)
+{
+	int result;
+	while(1)
+	{
+		result=justGetNum();
+		if(result>=min && result<=max)
+			break;
+		printf("\n超限！请输入合理的正常值！\n");
+	}
+	return result;
 }
 bool judgeSmallerNum(char num1[],char num2[],int s1end,int s2end)
 {/**返回false意味着num1>=num2**/
@@ -854,36 +912,46 @@ void testSystem(char *a,char *b)
 	strcpy(a,item[i][0]);
 	strcpy(b,item[i][1]);
 }
-/*
-TEST 1:
-000000000000000000000000000000.123456789876543212345678987654321
-0000000000000000000.1111111111111111111111111111111111111111
-TEST 2:
-0
-0
-TEST 3:
-1
-0
-TEST 4:
-12345
-12
-TEST 5:
-12
-12345.67
-TEST 6:
-0.33
-12345.67
-TEST 7:
-0.00001
-9999.99999
-TEST 8:
-0.001
-999.99999
-TEST 9:
-0.00001
-99.9999
-TEST 10:
-0.10001000
-0.00100
-****/
-/**/
+char *getPI(void)
+{
+	char *shu1,*shu2,*num1,*num2;
+	char *buff,*buff2;
+	int i,i2;
+	shu1 = (char *)malloc(sizeof(char)*(preOfPI +1));
+	shu2 = (char *)malloc(sizeof(char)*(preOfPI +1));
+	num1 = (char *)malloc(sizeof(char)*(preOfPI +1));
+	num2 = (char *)malloc(sizeof(char)*(preOfPI +1));
+	memset(shu1,0,preOfPI);
+	memset(shu2,0,preOfPI);
+	memset(num1,0,preOfPI);
+	memset(num2,0,preOfPI);
+	num1[0]='2';
+	num2[0]='1';
+	shu1[0]='2';
+	shu2[0]='1';
+	for(i=1;i<preOfPI;i++)
+	{
+		if( i % 2 == 0 )
+		{
+			buff = bigNumCompute(num1,"2",false,1,0,NULL);
+			strcpy(num1,buff);
+			free(buff);
+		}
+		else
+		{
+			buff = bigNumCompute(num2,"2",false,1,0,NULL);
+			strcpy(num2,buff);
+			free(buff);
+		}
+		buff = bigNumCompute(shu1,num1,false,3,0,NULL);
+		strcpy(shu1,buff);
+		free(buff);
+		buff = bigNumCompute(shu2,num2,false,3,0,NULL);
+		strcpy(shu2,buff);
+		free(buff);
+	}
+	buff = bigNumCompute(shu1,"2",false,3,0,NULL);
+	strcpy(shu1,buff);
+	free(buff);
+	return bigNumCompute(shu1,shu2,false,4,1000,NULL);
+}
