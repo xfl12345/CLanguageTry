@@ -35,11 +35,6 @@ void plusUnit(snum *s1,snum *s2,char *result,int *i,int mode);
 void analyzeNum(snum *num,int limitSize);
 /*顾名思义，covertInt2Char即整型值转换成字符型值*/
 void covertInt2Char(char *result,snum *aim,bool headspace);
-/*dropPort顾名思义，即丢掉小数点，
-*此函数设计专为除法服务，会把数字b（分母，除数）化成整数，
-*数字a和数字b各自的小数点将移动同样多的位数，
-*最终返回移动位数
-*/
 void justCopyResult(char *result,char *num1,char *num2,int mode);
 
 int serialZeroCount(char *shuZi,int s1end);
