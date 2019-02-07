@@ -2,7 +2,8 @@
 #include<stdlib.h>
 #include<stdbool.h>
 #include<string.h>
-#define preOfPI 49
+#define preOfPI 105
+#define readyNumSize 10000
 struct num{
 	char *shuZi;
 	int xsd;    /*xsd即小数点，记录小数点的下标 (radix point)*/
@@ -21,6 +22,8 @@ typedef struct num    snum;
 /**定义进制，范围应在char的大小以内**/
 int jinZhi = 10;  /*此处定义为十进制*/
 
+const bool is_DeBugMode=false;
+int times=0;
 
 /*mode=1:plus,mode=2:minus,mode=3:multiply,mode=4:divide;
 *模式1-4分别为加减乘除
@@ -64,11 +67,12 @@ char *getPI(void);
 int main(void)
 {
 	int i,precision=0;
-	char *shu1,*shu2,*result=NULL;
+	char *shu1,*shu2,*result;
+	shu1=shu2=result=NULL;
 	/*puts(result=getZeroStr(6));
 	printf("strSize=%d\n",_msize(result));
 	testSystem(shu1,shu2);
-	i=4;precision=500;*/
+	i=4;precision=500;
 	printf("Please define the length of Num:");
 	i = limitInputNum(1,2100000000);
 	shu1 = (char *)malloc(sizeof(char)*(i+1));
@@ -94,9 +98,9 @@ int main(void)
 	if(precision<0 || i<0 || i>4)
 		exit(250);
 	printf("\n\n");
-	//result = getPI();
-	result=bigNumCompute(shu1,shu2,false,i,precision,NULL);
-	i=0;
+	*/
+	result = getPI();
+	//result=bigNumCompute(shu1,shu2,false,i,precision,NULL);
 	while(result[++i]!='\0');
 	printf("Result=%s\n",result);
 	printf("\nstrlen=%d\n",i);
@@ -119,7 +123,23 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 	char oneCharStr[2]={'0','\0'},zeroCopy[2]={'0','\0'};
 	i=i2=tmpInt=0;
 	flag1=flag2=false;
-	tmpCharPoint = shu1src = shu2src = NULL;
+	result = yu2 = buff = tmpCharPoint = shu1src = shu2src = NULL;
+	if(is_DeBugMode)
+	{
+		printf("***这是第%d次运行计算***************************\n",times++);
+		printf("执行任务为：");
+		switch (mode)
+		{
+			case 1:printf("加法\n");break;
+			case 2:printf("减法\n");break;
+			case 3:printf("乘法\n");break;
+			case 4:printf("除法\n");break;
+			default:
+				break;
+		}
+		printf("初始数据shu1:%s\n",shu1);
+		printf("初始数据shu2:%s\n",shu2);
+	}
 	if(shu1 == NULL || shu2 == NULL)
 		exit(250);
 	if(shu1[0]=='-')
@@ -197,7 +217,13 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 		shu1src = shu1;
 		shu2src = shu2;
 	}
-	
+	if(is_DeBugMode)
+	{
+		printf("备份数据shu1src:%s\n",shu1src);
+		printf("备份数据shu2src:%s\n",shu2src);
+		printf("操作数据shu1:%s\n",shu1);
+		printf("操作数据shu2:%s\n",shu2);
+	}
 	if(  (!flag1 && flag2) || (flag1 && !flag2)  )
 	{/**一个正数和一个负数的情况下*/
 		switch (mode)
@@ -273,7 +299,9 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 			/**若除数为零**/
 			if(mode == 4)
 			{
-				free(shu2);
+				puts(shu1src);
+				puts(shu2src);
+				free(shu2src);
 				/**检查除数是否为零**/
 				if(s2.intIsZero && s2.xsIsZero)
 				{
@@ -281,7 +309,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 					if(tmpCharPoint == NULL)
 						exit(444);
 					strcpy(tmpCharPoint,"error!");/**那就直接报错，不用算了**/
-					free(shu1);
+					free(shu1src);
 					return tmpCharPoint;
 				}
 				return shu1;/**已经做了dropPort处理，直接返回被除数**/
@@ -314,7 +342,9 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 			exit(444);
 		memset(yu2,'\0',s2.length +3);
 		memset(buff,'\0',s2.length +3);
+		yu2[0]='1';
 		analyzeNum(yu,-1);
+		yu2[0]='\0';
 		yu->length = 0;
 		//yu2[yu->length++]=shu1[s1.xb++];
 		yu2[yu->length]='\0';
@@ -527,6 +557,13 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 		}
 	}
 	/********************整理最终数据**********************/
+	if(is_DeBugMode)
+	{
+		printf("结果初始数据result:");
+		for(i2=0;i2<minSize;i2++)
+			printf("%c",result[i2]+'0');
+		printf("\n");
+	}
 	if(mode == 3)
 	{
 		if(s1.xsd != -1 || s2.xsd != -1)
@@ -593,6 +630,11 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 	}
 	if(!is_positive)
 		tmpSnum.shuZi[0]='-';
+	if(is_DeBugMode)
+	{
+		printf("结果最终数据result:%s\n",tmpSnum.shuZi);
+		printf("***汇报完毕***************************\n");
+	}
 	return tmpSnum.shuZi;
 }
 void plusUnit(snum *s1,snum *s2,char *result,int *i,int mode)
@@ -642,6 +684,8 @@ void analyzeNum(snum *num,int limitSize)
 	if(num == NULL)
 		exit(250);
 	shuZi = num->shuZi;
+	if(shuZi[0]=='\0')
+		exit(685);
 	num->fractionLength = 0;
 	num->xsd = -1;
 	num->intIsZero = false;
@@ -910,44 +954,37 @@ void testSystem(char *a,char *b)
 }
 char *getPI(void)
 {
-	char *shu1,*shu2,*num1,*num2;
+	char shu1[readyNumSize],shu2[readyNumSize],num1[readyNumSize],num2[readyNumSize];
 	char *buff,*buff2;
 	int i,i2;
-	shu1 = (char *)malloc(sizeof(char)*(preOfPI +1));
-	shu2 = (char *)malloc(sizeof(char)*(preOfPI +1));
-	num1 = (char *)malloc(sizeof(char)*(preOfPI +1));
-	num2 = (char *)malloc(sizeof(char)*(preOfPI +1));
-	memset(shu1,0,preOfPI);
-	memset(shu2,0,preOfPI);
-	memset(num1,0,preOfPI);
-	memset(num2,0,preOfPI);
+	buff = buff2 = NULL;
+	memset(shu1,0,readyNumSize);
+	memset(shu2,0,readyNumSize);
+	memset(num1,0,readyNumSize);
+	memset(num2,0,readyNumSize);
 	num1[0]='2';
 	num2[0]='1';
 	shu1[0]='2';
 	shu2[0]='1';
-	for(i=1;i<preOfPI;i++)
+	for(i=1;i< preOfPI;i++)
 	{
+		if(is_DeBugMode)
+			printf("\n\n---这是第%d次循环-------\n",i);
 		if( i % 2 == 0 )
 		{
-			buff = bigNumCompute(num1,"2",false,1,0,NULL);
-			strcpy(num1,buff);
-			free(buff);
+			justCopyResult(num1,num1,"2",1);
 		}
 		else
 		{
-			buff = bigNumCompute(num2,"2",false,1,0,NULL);
-			strcpy(num2,buff);
-			free(buff);
+			justCopyResult(num2,num2,"2",1);
 		}
-		buff = bigNumCompute(shu1,num1,false,3,0,NULL);
-		strcpy(shu1,buff);
-		free(buff);
-		buff = bigNumCompute(shu2,num2,false,3,0,NULL);
-		strcpy(shu2,buff);
-		free(buff);
+		justCopyResult(shu1,shu1,num1,3);
+		justCopyResult(shu2,shu2,num2,3);
 	}
-	buff = bigNumCompute(shu1,"2",false,3,0,NULL);
-	strcpy(shu1,buff);
-	free(buff);
+	if(is_DeBugMode)
+		printf("\n\n---循环结束-------\n");
+	justCopyResult(shu1,shu1,"2",3);
+	if(is_DeBugMode)
+		printf("被除数：%s\n除数：%s\n\n",shu1,shu2);
 	return bigNumCompute(shu1,shu2,false,4,1000,NULL);
 }
