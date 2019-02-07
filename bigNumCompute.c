@@ -2,8 +2,8 @@
 #include<stdlib.h>
 #include<stdbool.h>
 #include<string.h>
-#define preOfPI 105
-#define readyNumSize 10000
+#define preOfPI 106
+#define readyNumSize 500
 struct num{
 	char *shuZi;
 	int xsd;    /*xsd即小数点，记录小数点的下标 (radix point)*/
@@ -38,7 +38,7 @@ void plusUnit(snum *s1,snum *s2,char *result,int *i,int mode);
 void analyzeNum(snum *num,int limitSize);
 /*顾名思义，covertInt2Char即整型值转换成字符型值*/
 void covertInt2Char(char *result,snum *aim,bool headspace);
-void justCopyResult(char *result,char *num1,char *num2,int mode);
+void justCopyResult(char *result,char *num1,char *num2,int size,int mode);
 
 int serialZeroCount(char *shuZi,int s1end);
 /*除去字符型数组中的无效字符*/
@@ -61,6 +61,7 @@ bool judgeSmallerInt(char num1[],char num2[],int s1end,int s2end);
 bool judgeSmallerXS(char num1[],char num2[],int s1end,int s2end);
 bool strcmp2(char str1[],char str2[],int end);
 void testSystem(char *a,char *b);
+void memeryIsNotEnough(void);
 /*Have not finished yet...*/
 char *getPI(void);
 
@@ -78,11 +79,7 @@ int main(void)
 	shu1 = (char *)malloc(sizeof(char)*(i+1));
 	shu2 = (char *)malloc(sizeof(char)*(i+1));
 	if(shu1 == NULL || shu2 == NULL)
-	{
-		puts("Sorry!Yours mechine did not have enough memery!");
-		puts("Program terminated!");
 		exit(444);
-	}
 	printf("Please input Num1:");
 	scanf("%s",shu1);
 	printf("Please input Num2:");
@@ -163,11 +160,11 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 		analyzeNum(&ss1,-1);
 		shu1src = (char *)malloc(sizeof(char)*(ss1.length +3) );
 		if( shu1src == NULL )
-			exit(444);
+			memeryIsNotEnough();
 		strcpy(shu1src,ss1.shuZi);
 		shu2src = (char *)malloc(sizeof(char)*(ss2.length +3) );
 		if( shu2src == NULL )
-			exit(444);
+			memeryIsNotEnough();
 		strcpy(shu2src,ss2.shuZi);
 		if( ss2.xsd != -1 )
 		{
@@ -175,7 +172,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 			{
 				shu2src = (char *)realloc(shu2src,sizeof(char)*(ss2.length - ss2.fractionLength +3));
 				if(shu2src == NULL)
-					exit(444);
+					memeryIsNotEnough();
 				strcpy2(shu2src,ss2.shuZi,ss2.xsd);
 				shu2src[ss2.xsd]='\0';
 			}
@@ -183,7 +180,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 			{
 				shu1src = (char *)realloc(shu1src, sizeof(char)*(ss1.length + ss2.fractionLength - ss1.fractionLength +3) );
 				if( shu1src == NULL )
-					exit(444);
+					memeryIsNotEnough();
 				ss1.xb = ss1.length;
 				if(ss1.xsd == -1)
 				{
@@ -307,7 +304,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 				{
 					tmpCharPoint = (char *)malloc(sizeof(char)*8);
 					if(tmpCharPoint == NULL)
-						exit(444);
+						memeryIsNotEnough();
 					strcpy(tmpCharPoint,"error!");/**那就直接报错，不用算了**/
 					free(shu1src);
 					return tmpCharPoint;
@@ -322,7 +319,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 		precision + 2 ;/*预留2位空间做进位处理*/
 	result=(char *)malloc(sizeof(char)*(minSize +8));
 	if(result == NULL)
-		exit(444);
+		memeryIsNotEnough();
 	memset(result,0,minSize);
 	result[minSize]='\0';
 	/**初始化余数空间**/
@@ -334,14 +331,14 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 		result[minSize]='\0';
 		yu = (snum *)malloc(sizeof(snum));
 		if(yu == NULL)
-			exit(444);
+			memeryIsNotEnough();
 		yu->shuZi = (char *)malloc(sizeof(char)*(s2.length +8));
 		buff = (char *)malloc(sizeof(char)*(s2.length +8));
 		yu2 = yu->shuZi;
 		if(yu2 == NULL || buff == NULL)
-			exit(444);
-		memset(yu2,'\0',s2.length +3);
-		memset(buff,'\0',s2.length +3);
+			memeryIsNotEnough();
+		memset(yu2,'\0',s2.length +4);
+		memset(buff,'\0',s2.length +4);
 		yu2[0]='1';
 		analyzeNum(yu,-1);
 		yu2[0]='\0';
@@ -491,8 +488,8 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 				}
 				oneCharStr[0] = result[i] + '0';
 				strcpy(buff,s2.shuZi);
-				justCopyResult(buff,buff,oneCharStr,3);
-				justCopyResult(buff,yu2,buff,2);
+				justCopyResult(buff,buff,oneCharStr,s2.length+3,3);
+				justCopyResult(buff,yu2,buff,s2.length+3,2);
 				while(buff[0]=='-')
 				{
 					result[i]--;
@@ -500,8 +497,8 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 					{
 						oneCharStr[0] = result[i] + '0';
 						strcpy(buff,s2.shuZi);
-						justCopyResult(buff,buff,oneCharStr,3);
-						justCopyResult(buff,yu2,buff,2);
+						justCopyResult(buff,buff,oneCharStr,s2.length+3,3);
+						justCopyResult(buff,yu2,buff,s2.length+3,2);
 					}
 					else
 					{
@@ -607,7 +604,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 			while(tmpSnum.shuZi[++i]!='\0');
 			buff = (char *)malloc(sizeof(char)*(i+5));
 			if(buff == NULL)
-				exit(444);
+				memeryIsNotEnough();
 			memset(buff,'0',i+4);
 			buff[i-1]='1';
 			buff[i]='\0';
@@ -723,7 +720,7 @@ void covertInt2Char(char *result,snum *aim,bool headspace)
 		i = aim->length - aim->xb + 2;
 	charResult=(char *)malloc(sizeof(char)*i );
 	if(charResult == NULL)
-		exit(444);
+		memeryIsNotEnough();
 	for( i = aim->xb, i2 = 0 ; i < aim->length ; i++ )
 	{
 		if(i2==0 && headspace)
@@ -738,14 +735,20 @@ void covertInt2Char(char *result,snum *aim,bool headspace)
 	aim->shuZi = charResult;
 	return;
 }
-void justCopyResult(char *result,char *num1,char *num2,int mode)
+void justCopyResult(char *result,char *num1,char *num2,int size,int mode)
 {
-	if(result == NULL || \
-	num1 == NULL || \
-	num2 == NULL || \
+	if(result == NULL || size <=0 || \
+	num1 == NULL || num2 == NULL || \
 	mode <0 || mode >3 )
 		exit(250);
+	int i=0;
 	char *buff = bigNumCompute(num1,num2,false,mode,0,NULL);
+	while(buff[++i]!='\0');
+	if(i>size)
+	{
+		printf("\n\nOut of memery!\n\n");
+		exit(251);
+	}
 	strcpy(result,buff);
 	free(buff);
 	return;
@@ -954,10 +957,16 @@ void testSystem(char *a,char *b)
 }
 char *getPI(void)
 {
-	char shu1[readyNumSize],shu2[readyNumSize],num1[readyNumSize],num2[readyNumSize];
+	char *shu1,*shu2,*num1,*num2;
 	char *buff,*buff2;
 	int i,i2;
 	buff = buff2 = NULL;
+	shu1 = (char *)malloc(sizeof(char)*(readyNumSize +1));
+	shu2 = (char *)malloc(sizeof(char)*(readyNumSize +1));
+	num1 = (char *)malloc(sizeof(char)*(readyNumSize +1));
+	num2 = (char *)malloc(sizeof(char)*(readyNumSize +1));
+	if( !(shu1 && shu2 && num1 && num2) )
+		memeryIsNotEnough();
 	memset(shu1,0,readyNumSize);
 	memset(shu2,0,readyNumSize);
 	memset(num1,0,readyNumSize);
@@ -972,19 +981,25 @@ char *getPI(void)
 			printf("\n\n---这是第%d次循环-------\n",i);
 		if( i % 2 == 0 )
 		{
-			justCopyResult(num1,num1,"2",1);
+			justCopyResult(num1,num1,"2",readyNumSize,1);
 		}
 		else
 		{
-			justCopyResult(num2,num2,"2",1);
+			justCopyResult(num2,num2,"2",readyNumSize,1);
 		}
-		justCopyResult(shu1,shu1,num1,3);
-		justCopyResult(shu2,shu2,num2,3);
+		justCopyResult(shu1,shu1,num1,readyNumSize,3);
+		justCopyResult(shu2,shu2,num2,readyNumSize,3);
 	}
 	if(is_DeBugMode)
 		printf("\n\n---循环结束-------\n");
-	justCopyResult(shu1,shu1,"2",3);
+	justCopyResult(shu1,shu1,"2",readyNumSize,3);
 	if(is_DeBugMode)
 		printf("被除数：%s\n除数：%s\n\n",shu1,shu2);
 	return bigNumCompute(shu1,shu2,false,4,1000,NULL);
+}
+void memeryIsNotEnough(void)
+{
+	puts("Sorry!Yours mechine did not have enough memery!");
+	puts("Program terminated!");
+	exit(444);
 }
