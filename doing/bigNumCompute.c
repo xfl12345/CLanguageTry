@@ -2,8 +2,8 @@
 #include<stdlib.h>
 #include<stdbool.h>
 #include<string.h>
-#define preOfPI 106
-#define readyNumSize 500
+#define preOfPI 53
+#define readyNumSize 1000000000
 struct num{
 	char *shuZi;
 	int xsd;    /*xsd即小数点，记录小数点的下标 (radix point)*/
@@ -95,13 +95,12 @@ int main(void)
 	if(precision<0 || i<0 || i>4)
 		exit(250);
 	printf("\n\n");
-	*/
+	result=bigNumCompute(shu1,shu2,false,i,precision,NULL);*/
 	result = getPI();
-	//result=bigNumCompute(shu1,shu2,false,i,precision,NULL);
 	while(result[++i]!='\0');
 	printf("Result=%s\n",result);
 	printf("\nstrlen=%d\n",i);
-	getchar();
+	//getchar();
 	/*printf("strSize=%d\n",_msize(result));*/
 	return 0;
 }
@@ -958,44 +957,46 @@ void testSystem(char *a,char *b)
 char *getPI(void)
 {
 	char *shu1,*shu2,*num1,*num2;
-	char *buff,*buff2;
-	int i,i2;
-	buff = buff2 = NULL;
-	shu1 = (char *)malloc(sizeof(char)*(readyNumSize +1));
-	shu2 = (char *)malloc(sizeof(char)*(readyNumSize +1));
+	char *buff;
+	int i;
+	buff = NULL;
+	shu1 = (char *)malloc(sizeof(char)*(readyNumSize *100 +1));
+	shu2 = (char *)malloc(sizeof(char)*(readyNumSize *100 +1));
 	num1 = (char *)malloc(sizeof(char)*(readyNumSize +1));
 	num2 = (char *)malloc(sizeof(char)*(readyNumSize +1));
 	if( !(shu1 && shu2 && num1 && num2) )
 		memeryIsNotEnough();
-	memset(shu1,0,readyNumSize);
-	memset(shu2,0,readyNumSize);
+	memset(shu1,0,readyNumSize *100);
+	memset(shu2,0,readyNumSize *100);
 	memset(num1,0,readyNumSize);
 	memset(num2,0,readyNumSize);
-	num1[0]='2';
-	num2[0]='1';
-	shu1[0]='2';
+	num1[0]='0';
+	num2[0]='0';
+	shu1[0]='1';
 	shu2[0]='1';
-	for(i=1;i< preOfPI;i++)
+	for(i=0;i< preOfPI;i++)
 	{
 		if(is_DeBugMode)
-			printf("\n\n---这是第%d次循环-------\n",i);
-		if( i % 2 == 0 )
-		{
-			justCopyResult(num1,num1,"2",readyNumSize,1);
-		}
-		else
-		{
-			justCopyResult(num2,num2,"2",readyNumSize,1);
-		}
-		justCopyResult(shu1,shu1,num1,readyNumSize,3);
-		justCopyResult(shu2,shu2,num2,readyNumSize,3);
+			printf("\n\n---这是第%d次循环-------\n",i+1);
+		justCopyResult(num1,num1,"2",readyNumSize,1);
+		justCopyResult(num2,num1,"1",readyNumSize,2);
+		justCopyResult(shu1,shu1,num1,readyNumSize *100 ,3);
+		justCopyResult(shu1,shu1,num1,readyNumSize *100 ,3);
+		justCopyResult(shu2,shu2,num2,readyNumSize *100 ,3);
+		justCopyResult(num2,num1,"1",readyNumSize,1);
+		justCopyResult(shu2,shu2,num2,readyNumSize *100 ,3);
 	}
+	free(num1);
+	free(num2);
 	if(is_DeBugMode)
 		printf("\n\n---循环结束-------\n");
 	justCopyResult(shu1,shu1,"2",readyNumSize,3);
-	if(is_DeBugMode)
+	//if(is_DeBugMode)
 		printf("被除数：%s\n除数：%s\n\n",shu1,shu2);
-	return bigNumCompute(shu1,shu2,false,4,1000,NULL);
+	buff = bigNumCompute(shu1,shu2,false,4,1000,NULL);
+	free(shu1);
+	free(shu2);
+	return buff;
 }
 void memeryIsNotEnough(void)
 {
