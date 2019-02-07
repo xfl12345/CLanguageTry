@@ -295,8 +295,6 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 			/**若除数为零**/
 			if(mode == 4)
 			{
-				puts(shu1src);
-				puts(shu2src);
 				free(shu2src);
 				/**检查除数是否为零**/
 				if(s2.intIsZero && s2.xsIsZero)
