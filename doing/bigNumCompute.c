@@ -2,55 +2,56 @@
 #include<stdlib.h>
 #include<stdbool.h>
 #include<string.h>
-#define preOfPI 49
+#define preOfPI 106
+#define readyNumSize 500
 struct num{
 	char *shuZi;
-	int xsd;    /*xsd¼´Ğ¡Êıµã£¬¼ÇÂ¼Ğ¡ÊıµãµÄÏÂ±ê (radix point)*/
-	int length;   /*length¼´Êı×ÖµÄÊı×é³¤¶È*/
-	int intLength; /*intLength¼´ÕûÊı²¿·ÖµÄ³¤¶È*/
-	int fractionLength; /*fractionLength¼´Ğ¡Êı²¿·ÖµÄ³¤¶È*/
-	//int validIntStart; /*·ÇÁãÊıÆğÊ¼ÏÂ±ê*/
-	int xb; /*xb¼´ÏÂ±ê (position)*/
-	bool is_positive;   /*ÅĞ¶ÏÊÇ·ñÎªÕıÊı*/
-	bool intIsZero;     /*ÅĞ¶ÏÕûÊı²¿·ÖÊÇ·ñÎªÁã*/
-	bool xsIsZero;     /*ÅĞ¶ÏĞ¡Êı²¿·ÖÊÇ·ñÎªÁã*/
-	bool moveOneStep;   /*½öÒÆ¶¯Ò»²½£¬ÖµÎªÕæÊ±£¬ÏÂ±êÓ¦¼õÒ»*/
+	int xsd;    /*xsdå³å°æ•°ç‚¹ï¼Œè®°å½•å°æ•°ç‚¹çš„ä¸‹æ ‡ (radix point)*/
+	int length;   /*lengthå³æ•°å­—çš„æ•°ç»„é•¿åº¦*/
+	int intLength; /*intLengthå³æ•´æ•°éƒ¨åˆ†çš„é•¿åº¦*/
+	int fractionLength; /*fractionLengthå³å°æ•°éƒ¨åˆ†çš„é•¿åº¦*/
+	//int validIntStart; /*éé›¶æ•°èµ·å§‹ä¸‹æ ‡*/
+	int xb; /*xbå³ä¸‹æ ‡ (position)*/
+	bool is_positive;   /*åˆ¤æ–­æ˜¯å¦ä¸ºæ­£æ•°*/
+	bool intIsZero;     /*åˆ¤æ–­æ•´æ•°éƒ¨åˆ†æ˜¯å¦ä¸ºé›¶*/
+	bool xsIsZero;     /*åˆ¤æ–­å°æ•°éƒ¨åˆ†æ˜¯å¦ä¸ºé›¶*/
+	bool moveOneStep;   /*ä»…ç§»åŠ¨ä¸€æ­¥ï¼Œå€¼ä¸ºçœŸæ—¶ï¼Œä¸‹æ ‡åº”å‡ä¸€*/
 };
 typedef struct num    snum;
 
-/**¶¨Òå½øÖÆ£¬·¶Î§Ó¦ÔÚcharµÄ´óĞ¡ÒÔÄÚ**/
-int jinZhi = 10;  /*´Ë´¦¶¨ÒåÎªÊ®½øÖÆ*/
+/**å®šä¹‰è¿›åˆ¶ï¼ŒèŒƒå›´åº”åœ¨charçš„å¤§å°ä»¥å†…**/
+int jinZhi = 10;  /*æ­¤å¤„å®šä¹‰ä¸ºåè¿›åˆ¶*/
 
-const bool is_DeBugMode=true;
+const bool is_DeBugMode=false;
 int times=0;
 
 /*mode=1:plus,mode=2:minus,mode=3:multiply,mode=4:divide;
-*Ä£Ê½1-4·Ö±ğÎª¼Ó¼õ³Ë³ı
+*æ¨¡å¼1-4åˆ†åˆ«ä¸ºåŠ å‡ä¹˜é™¤
 */
 char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precision,char **remainder);
-/*¼Ó·¨¡¢¼õ·¨ºÍ³Ë·¨£¬±¾ÖÊÉÏ¶¼ÊÇ¼Ó·¨£¬
-*´Ëº¯ÊıÎª·½±ã³ı·¨ÔËËã¶øÉè¼Æ£¬Í¬Ê±¸øbigNumComptueÊİÉí
+/*åŠ æ³•ã€å‡æ³•å’Œä¹˜æ³•ï¼Œæœ¬è´¨ä¸Šéƒ½æ˜¯åŠ æ³•ï¼Œ
+*æ­¤å‡½æ•°ä¸ºæ–¹ä¾¿é™¤æ³•è¿ç®—è€Œè®¾è®¡ï¼ŒåŒæ—¶ç»™bigNumComptueç˜¦èº«
 */
 void plusUnit(snum *s1,snum *s2,char *result,int *i,int mode);
 
-/*limitSizeÔÊĞíÍâ²¿´«ÈëÊı¾İÒÔ¿ØÖÆº¯Êı·ÖÎö·¶Î§£¬Èç¹û²»ÊÇÕıÊı£¬ÔòÄ¬ÈÏ¶ÁÍêÕû¸öÊı×é£¬Ä¬ÈÏ×îºóÒ»Î»ÊÇ½áÊø·û£¨'\0'£©*/
+/*limitSizeå…è®¸å¤–éƒ¨ä¼ å…¥æ•°æ®ä»¥æ§åˆ¶å‡½æ•°åˆ†æèŒƒå›´ï¼Œå¦‚æœä¸æ˜¯æ­£æ•°ï¼Œåˆ™é»˜è®¤è¯»å®Œæ•´ä¸ªæ•°ç»„ï¼Œé»˜è®¤æœ€åä¸€ä½æ˜¯ç»“æŸç¬¦ï¼ˆ'\0'ï¼‰*/
 void analyzeNum(snum *num,int limitSize);
-/*¹ËÃûË¼Òå£¬covertInt2Char¼´ÕûĞÍÖµ×ª»»³É×Ö·ûĞÍÖµ*/
+/*é¡¾åæ€ä¹‰ï¼ŒcovertInt2Charå³æ•´å‹å€¼è½¬æ¢æˆå­—ç¬¦å‹å€¼*/
 void covertInt2Char(char *result,snum *aim,bool headspace);
-void justCopyResult(char *result,char *num1,char *num2,int mode);
+void justCopyResult(char *result,char *num1,char *num2,int size,int mode);
 
 int serialZeroCount(char *shuZi,int s1end);
-/*³ıÈ¥×Ö·ûĞÍÊı×éÖĞµÄÎŞĞ§×Ö·û*/
+/*é™¤å»å­—ç¬¦å‹æ•°ç»„ä¸­çš„æ— æ•ˆå­—ç¬¦*/
 void jumpUselessChar(char **ShuZi);
 
-/*charSwap¹ËÃûË¼Òå£¬¼´×Ö·ûĞÍ±äÁ¿½»»»*/
+/*charSwapé¡¾åæ€ä¹‰ï¼Œå³å­—ç¬¦å‹å˜é‡äº¤æ¢*/
 void charSwap(char *a,char *b);
-/*charPtrSwap¼´charPointerSwap
-*¹ËÃûË¼Òå£¬¼´×Ö·ûĞÍÖ¸Õë±äÁ¿½»»»
+/*charPtrSwapå³charPointerSwap
+*é¡¾åæ€ä¹‰ï¼Œå³å­—ç¬¦å‹æŒ‡é’ˆå˜é‡äº¤æ¢
 */
 void charPtrSwap(char **a,char **b);
 void strcpy2(char *a,char *b,int s1end);
-/*getMaxInt¹ËÃûË¼Òå£¬¼´»ñÈ¡a,bÁ½ÕßÖĞ×î´óµÄÖµ*/
+/*getMaxInté¡¾åæ€ä¹‰ï¼Œå³è·å–a,bä¸¤è€…ä¸­æœ€å¤§çš„å€¼*/
 int getMaxInt(int a,int b);
 int justGetNum(void);
 int limitInputNum(int min,int max);
@@ -60,6 +61,7 @@ bool judgeSmallerInt(char num1[],char num2[],int s1end,int s2end);
 bool judgeSmallerXS(char num1[],char num2[],int s1end,int s2end);
 bool strcmp2(char str1[],char str2[],int end);
 void testSystem(char *a,char *b);
+void memeryIsNotEnough(void);
 /*Have not finished yet...*/
 char *getPI(void);
 
@@ -77,11 +79,7 @@ int main(void)
 	shu1 = (char *)malloc(sizeof(char)*(i+1));
 	shu2 = (char *)malloc(sizeof(char)*(i+1));
 	if(shu1 == NULL || shu2 == NULL)
-	{
-		puts("Sorry!Yours mechine did not have enough memery!");
-		puts("Program terminated!");
 		exit(444);
-	}
 	printf("Please input Num1:");
 	scanf("%s",shu1);
 	printf("Please input Num2:");
@@ -114,9 +112,9 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 	bool flag1,flag2;
 	bool is_syn=false,is_positive=true,need_roundUp=false;
 	char *tmpCharPoint,*shu1src,*shu2src;
-	/*startPoint¼ÇÂ¼¡°½á¹û¡±ÀïµÄĞ¡ÊıµãµÄÏÂ±ê£¬
-	*µ«²»Í¬Ëã·¨£¬ÓÉÓÚiµÄÒÆ¶¯·½Ïò²»Ò»Ñù
-	*startPointµÄÖµ²¢²»ÊÇÍ³Ò»µÄstartPoint = i*/
+	/*startPointè®°å½•â€œç»“æœâ€é‡Œçš„å°æ•°ç‚¹çš„ä¸‹æ ‡ï¼Œ
+	*ä½†ä¸åŒç®—æ³•ï¼Œç”±äºiçš„ç§»åŠ¨æ–¹å‘ä¸ä¸€æ ·
+	*startPointçš„å€¼å¹¶ä¸æ˜¯ç»Ÿä¸€çš„startPoint = i*/
 	int startPoint=-1;
 	char *result,*yu2,*buff;
 	char oneCharStr[2]={'0','\0'},zeroCopy[2]={'0','\0'};
@@ -125,25 +123,25 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 	result = yu2 = buff = tmpCharPoint = shu1src = shu2src = NULL;
 	if(is_DeBugMode)
 	{
-		printf("***ÕâÊÇµÚ%d´ÎÔËĞĞ¼ÆËã***************************\n",times++);
-		printf("Ö´ĞĞÈÎÎñÎª£º");
+		printf("***è¿™æ˜¯ç¬¬%dæ¬¡è¿è¡Œè®¡ç®—***************************\n",times++);
+		printf("æ‰§è¡Œä»»åŠ¡ä¸ºï¼š");
 		switch (mode)
 		{
-			case 1:printf("¼Ó·¨\n");break;
-			case 2:printf("¼õ·¨\n");break;
-			case 3:printf("³Ë·¨\n");break;
-			case 4:printf("³ı·¨\n");break;
+			case 1:printf("åŠ æ³•\n");break;
+			case 2:printf("å‡æ³•\n");break;
+			case 3:printf("ä¹˜æ³•\n");break;
+			case 4:printf("é™¤æ³•\n");break;
 			default:
 				break;
 		}
-		printf("³õÊ¼Êı¾İshu1:%s\n",shu1);
-		printf("³õÊ¼Êı¾İshu2:%s\n",shu2);
+		printf("åˆå§‹æ•°æ®shu1:%s\n",shu1);
+		printf("åˆå§‹æ•°æ®shu2:%s\n",shu2);
 	}
 	if(shu1 == NULL || shu2 == NULL)
 		exit(250);
 	if(shu1[0]=='-')
 	{
-		shu1++;/*½Øµô¸ººÅ*/
+		shu1++;/*æˆªæ‰è´Ÿå·*/
 		flag1=true;
 	}
 	if(shu2[0]=='-')
@@ -162,11 +160,11 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 		analyzeNum(&ss1,-1);
 		shu1src = (char *)malloc(sizeof(char)*(ss1.length +3) );
 		if( shu1src == NULL )
-			exit(444);
+			memeryIsNotEnough();
 		strcpy(shu1src,ss1.shuZi);
 		shu2src = (char *)malloc(sizeof(char)*(ss2.length +3) );
 		if( shu2src == NULL )
-			exit(444);
+			memeryIsNotEnough();
 		strcpy(shu2src,ss2.shuZi);
 		if( ss2.xsd != -1 )
 		{
@@ -174,7 +172,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 			{
 				shu2src = (char *)realloc(shu2src,sizeof(char)*(ss2.length - ss2.fractionLength +3));
 				if(shu2src == NULL)
-					exit(444);
+					memeryIsNotEnough();
 				strcpy2(shu2src,ss2.shuZi,ss2.xsd);
 				shu2src[ss2.xsd]='\0';
 			}
@@ -182,7 +180,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 			{
 				shu1src = (char *)realloc(shu1src, sizeof(char)*(ss1.length + ss2.fractionLength - ss1.fractionLength +3) );
 				if( shu1src == NULL )
-					exit(444);
+					memeryIsNotEnough();
 				ss1.xb = ss1.length;
 				if(ss1.xsd == -1)
 				{
@@ -218,29 +216,29 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 	}
 	if(is_DeBugMode)
 	{
-		printf("±¸·İÊı¾İshu1src:%s\n",shu1src);
-		printf("±¸·İÊı¾İshu2src:%s\n",shu2src);
-		printf("²Ù×÷Êı¾İshu1:%s\n",shu1);
-		printf("²Ù×÷Êı¾İshu2:%s\n",shu2);
+		printf("å¤‡ä»½æ•°æ®shu1src:%s\n",shu1src);
+		printf("å¤‡ä»½æ•°æ®shu2src:%s\n",shu2src);
+		printf("æ“ä½œæ•°æ®shu1:%s\n",shu1);
+		printf("æ“ä½œæ•°æ®shu2:%s\n",shu2);
 	}
 	if(  (!flag1 && flag2) || (flag1 && !flag2)  )
-	{/**Ò»¸öÕıÊıºÍÒ»¸ö¸ºÊıµÄÇé¿öÏÂ*/
+	{/**ä¸€ä¸ªæ­£æ•°å’Œä¸€ä¸ªè´Ÿæ•°çš„æƒ…å†µä¸‹*/
 		switch (mode)
 		{
 			case 1:
-				/**ÕıÊı¼Ó¸ºÊıÔËËã ºÍ ¸ºÊı¼ÓÕıÊıÔËËã ¿ÉÒÔ»¯×÷¼õ·¨ÔËËã**/
+				/**æ­£æ•°åŠ è´Ÿæ•°è¿ç®— å’Œ è´Ÿæ•°åŠ æ­£æ•°è¿ç®— å¯ä»¥åŒ–ä½œå‡æ³•è¿ç®—**/
 				if(!flag1)
 					tmpCharPoint=bigNumCompute(shu1,shu2,false,2,0,NULL);
 				else
 					tmpCharPoint=bigNumCompute(shu2,shu1,false,2,0,NULL);
-				return tmpCharPoint;/***´óÊı×Ö¼õ·¨ÒÑ¾­½â¾öºÃ·ûºÅÎÊÌâ£¬Ö±½Ó·µ»Ø´ğ°¸***/
+				return tmpCharPoint;/***å¤§æ•°å­—å‡æ³•å·²ç»è§£å†³å¥½ç¬¦å·é—®é¢˜ï¼Œç›´æ¥è¿”å›ç­”æ¡ˆ***/
 				break;
 			case 2:
-				/**ÕıÊı¼Ó¸ºÊıÔËËã ºÍ ¸ºÊı¼ÓÕıÊıÔËËã ¿ÉÒÔ»¯×÷¼õ·¨ÔËËã**/
+				/**æ­£æ•°åŠ è´Ÿæ•°è¿ç®— å’Œ è´Ÿæ•°åŠ æ­£æ•°è¿ç®— å¯ä»¥åŒ–ä½œå‡æ³•è¿ç®—**/
 				if(flag1 && !flag2)
 				{
 					tmpCharPoint=bigNumCompute(shu1,shu2,true,1,0,NULL);
-					tmpCharPoint[0]='-';/***ÈôÊÇ¸º¼õÕıÔËËã£¬Ôò½á¹ûµÄ·ûºÅ»¹ÊÇ¸ººÅ***/
+					tmpCharPoint[0]='-';/***è‹¥æ˜¯è´Ÿå‡æ­£è¿ç®—ï¼Œåˆ™ç»“æœçš„ç¬¦å·è¿˜æ˜¯è´Ÿå·***/
 				}
 				else
 				{
@@ -255,7 +253,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 		}
 	}
 	else if(flag1 && flag2)
-	{/**¼õ·¨£¬¸º¸ºÏà¼õ£¬×ª³ÉÕı¼õÕı;³Ë·¨ºÍ³ı·¨£¬¸º¸ºµÃÕı£¬ÎŞĞè¸Ä±ä³õÊ¼Êı¾İ**/
+	{/**å‡æ³•ï¼Œè´Ÿè´Ÿç›¸å‡ï¼Œè½¬æˆæ­£å‡æ­£;ä¹˜æ³•å’Œé™¤æ³•ï¼Œè´Ÿè´Ÿå¾—æ­£ï¼Œæ— éœ€æ”¹å˜åˆå§‹æ•°æ®**/
 		if(mode==2)
 			return bigNumCompute(shu2,shu1,false,2,0,NULL);
 	}
@@ -267,14 +265,14 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 		s2.is_positive = false;
 	while(shu1[++i]!='\0');
 	while(shu2[++i2]!='\0');
-	/**************½»»»¿Õ¼ä£¬·½±ãÉè¼Æ****************/
+	/**************äº¤æ¢ç©ºé—´ï¼Œæ–¹ä¾¿è®¾è®¡****************/
 	if(mode == 2)
 	{
-		if(judgeSmallerNum(shu1,shu2,i-1,i2-1))/*Ä¬ÈÏshu1Êı×Ö×î´ó*/
-		{/*Èç¹ûshu2Êı×Ö¸ü´ó£¬Ôò½»»»Ãû³Æ*/
+		if(judgeSmallerNum(shu1,shu2,i-1,i2-1))/*é»˜è®¤shu1æ•°å­—æœ€å¤§*/
+		{/*å¦‚æœshu2æ•°å­—æ›´å¤§ï¼Œåˆ™äº¤æ¢åç§°*/
 			charPtrSwap(&shu1,&shu2);
 			charPtrSwap(&shu1src,&shu2src);
-			is_positive = false;/*½á¹ûÈ¡¸º*/
+			is_positive = false;/*ç»“æœå–è´Ÿ*/
 		}
 	}
 	else if(mode == 3)
@@ -289,64 +287,66 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 	s2.shuZi = shu2;
 	analyzeNum(&s1,-1);
 	analyzeNum(&s2,-1);
-	/**¼ì²éÊÇ·ñÓĞÊı×ÖÎªÁã**/
+	/**æ£€æŸ¥æ˜¯å¦æœ‰æ•°å­—ä¸ºé›¶**/
 	if(mode == 3 || mode == 4)
 	{
 		if( (s1.intIsZero && s1.xsIsZero) || (s2.intIsZero && s2.xsIsZero) )
 		{
-			is_positive = true;/**×Ü²»ÄÜ³öÏÖ¡°¸ºÁã¡±µÄÇé¿ö°É**/
-			/**Èô³ıÊıÎªÁã**/
+			is_positive = true;/**æ€»ä¸èƒ½å‡ºç°â€œè´Ÿé›¶â€çš„æƒ…å†µå§**/
+			/**è‹¥é™¤æ•°ä¸ºé›¶**/
 			if(mode == 4)
 			{
 				puts(shu1src);
 				puts(shu2src);
 				free(shu2src);
-				/**¼ì²é³ıÊıÊÇ·ñÎªÁã**/
+				/**æ£€æŸ¥é™¤æ•°æ˜¯å¦ä¸ºé›¶**/
 				if(s2.intIsZero && s2.xsIsZero)
 				{
 					tmpCharPoint = (char *)malloc(sizeof(char)*8);
 					if(tmpCharPoint == NULL)
-						exit(444);
-					strcpy(tmpCharPoint,"error!");/**ÄÇ¾ÍÖ±½Ó±¨´í£¬²»ÓÃËãÁË**/
+						memeryIsNotEnough();
+					strcpy(tmpCharPoint,"error!");/**é‚£å°±ç›´æ¥æŠ¥é”™ï¼Œä¸ç”¨ç®—äº†**/
 					free(shu1src);
 					return tmpCharPoint;
 				}
-				return shu1;/**ÒÑ¾­×öÁËdropPort´¦Àí£¬Ö±½Ó·µ»Ø±»³ıÊı**/
+				return shu1;/**å·²ç»åšäº†dropPortå¤„ç†ï¼Œç›´æ¥è¿”å›è¢«é™¤æ•°**/
 			}
 		}
 	}
-	/*****************ÔËËã½á¹ûÁÙÊ±´æ´¢¿Õ¼ä³õÊ¼»¯************************/
+	/*****************è¿ç®—ç»“æœä¸´æ—¶å­˜å‚¨ç©ºé—´åˆå§‹åŒ–************************/
 	minSize = getMaxInt(s1.intLength, s2.intLength) + \
 		getMaxInt(s1.fractionLength, s2.fractionLength) + \
-		precision + 2 ;/*Ô¤Áô2Î»¿Õ¼ä×ö½øÎ»´¦Àí*/
+		precision + 2 ;/*é¢„ç•™2ä½ç©ºé—´åšè¿›ä½å¤„ç†*/
 	result=(char *)malloc(sizeof(char)*(minSize +8));
 	if(result == NULL)
-		exit(444);
+		memeryIsNotEnough();
 	memset(result,0,minSize);
 	result[minSize]='\0';
-	/**³õÊ¼»¯ÓàÊı¿Õ¼ä**/
+	/**åˆå§‹åŒ–ä½™æ•°ç©ºé—´**/
 	if(mode == 4)
 	{
-		minSize--;  /**Ö»Áô¶àÒ»Î»×öËÄÉáÎåÈëÅĞ¶Ï**/
+		minSize--;  /**åªç•™å¤šä¸€ä½åšå››èˆäº”å…¥åˆ¤æ–­**/
 		if(s1.xsd == -1 )
 			minSize--;
 		result[minSize]='\0';
 		yu = (snum *)malloc(sizeof(snum));
 		if(yu == NULL)
-			exit(444);
+			memeryIsNotEnough();
 		yu->shuZi = (char *)malloc(sizeof(char)*(s2.length +8));
 		buff = (char *)malloc(sizeof(char)*(s2.length +8));
 		yu2 = yu->shuZi;
 		if(yu2 == NULL || buff == NULL)
-			exit(444);
-		memset(yu2,'\0',s2.length +3);
-		memset(buff,'\0',s2.length +3);
+			memeryIsNotEnough();
+		memset(yu2,'\0',s2.length +4);
+		memset(buff,'\0',s2.length +4);
+		yu2[0]='1';
 		analyzeNum(yu,-1);
+		yu2[0]='\0';
 		yu->length = 0;
 		//yu2[yu->length++]=shu1[s1.xb++];
 		yu2[yu->length]='\0';
 	}
-	/********************ÔËËã¿ò¼Ü***********************/
+	/********************è¿ç®—æ¡†æ¶***********************/
 	s1.moveOneStep = s2.moveOneStep = is_syn = flag1 = flag2 = false;
 	s1.xb = s1.length -1;
 	s2.xb = s2.length -1;
@@ -354,7 +354,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 	if(mode == 4)
 		s1.xb = i = 0;
 	while(  (!flag1 || !flag2) && i>=0  )
-	{/*****³Ë·¨ºÍ³ı·¨¶¼ĞèÒªĞèÒªÒì²½´¦Àí*****/
+	{/*****ä¹˜æ³•å’Œé™¤æ³•éƒ½éœ€è¦éœ€è¦å¼‚æ­¥å¤„ç†*****/
 		if(mode == 3)
 		{
 			if(s2.xb < 0)
@@ -364,7 +364,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 				s2.xb--;
 		}
 		else if(mode == 4)
-		{	/*****´¦ÀíĞ¡Êıµã*****/
+		{	/*****å¤„ç†å°æ•°ç‚¹*****/
 			if( s1.shuZi[s1.xb]=='.' )
 			{
 				startPoint = i;
@@ -372,23 +372,23 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 			}
 			if( i == minSize || (precision==0 && flag1 && yu2[0]=='0') )
 			{
-				//printf("\n×îÖÕÓàÊı£º%s\n",yu2);
+				//printf("\næœ€ç»ˆä½™æ•°ï¼š%s\n",yu2);
 				if(yu2[0]!='0' && result[i-1] >= 5)
 					need_roundUp = true;
-				minSize--;/**¶ªÆúÓÃÓÚÅĞ¶ÏËÄÉáÎåÈëµÄ×îºóÒ»Î»**/
+				minSize--;/**ä¸¢å¼ƒç”¨äºåˆ¤æ–­å››èˆäº”å…¥çš„æœ€åä¸€ä½**/
 				break;
 			}
 			if(yu2[0]=='0')
 				yu->length = 0;
 			yu2[yu->length++]=s1.shuZi[s1.xb];
 			yu2[yu->length]='\0';
-			/**ÅĞ¶ÏÔ­Ê¼±»³ıÊıÊÇ·ñ¶ÁÍê**/
+			/**åˆ¤æ–­åŸå§‹è¢«é™¤æ•°æ˜¯å¦è¯»å®Œ**/
 			if(!flag1)
-			{	/**Èç¹û¶ÁÍêÁË**/
+			{	/**å¦‚æœè¯»å®Œäº†**/
 				if(s1.xb +1 == s1.length)
 				{
 					flag1 = true;
-					s1.shuZi = zeroCopy;/**³­Áã´¦Àí**/
+					s1.shuZi = zeroCopy;/**æŠ„é›¶å¤„ç†**/
 					s1.xb = 0;
 					if(startPoint == -1)
 						startPoint = i+1;
@@ -400,7 +400,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 			}
 		}
 		else
-		{	/*****Í¬²½´¦Àí*****/
+		{	/*****åŒæ­¥å¤„ç†*****/
 			if(!is_syn)
 			{
 				if( !flag1 && !flag2)
@@ -408,7 +408,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 					if(s1.fractionLength > s2.fractionLength)
 					{
 						if( s1.fractionLength - (s1.length -1 - s1.xb) == s2.fractionLength )
-						{/*µ±Á½¸öÊı×ÖµÄÏÂ±êÓë¸÷×ÔµÄĞ¡Êıµã¾àÀëÏàµÈµÄÊ±ºò£¬½áÊø³­Áã´¦Àí£¬Í¬²½½øĞĞÔËËã*/
+						{/*å½“ä¸¤ä¸ªæ•°å­—çš„ä¸‹æ ‡ä¸å„è‡ªçš„å°æ•°ç‚¹è·ç¦»ç›¸ç­‰çš„æ—¶å€™ï¼Œç»“æŸæŠ„é›¶å¤„ç†ï¼ŒåŒæ­¥è¿›è¡Œè¿ç®—*/
 							s2.shuZi = shu2src;
 							s2.xb = s2.length -1;
 							is_syn=true;
@@ -436,7 +436,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 						}
 					}
 					else
-					{/*ÕûÊıÔËËã»òĞ¡ÊıÎ»ÊıÏàÍ¬£¬Ö±½ÓÍ¬²½*/
+					{/*æ•´æ•°è¿ç®—æˆ–å°æ•°ä½æ•°ç›¸åŒï¼Œç›´æ¥åŒæ­¥*/
 						is_syn=true;
 					}
 				}
@@ -448,7 +448,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 						s1.moveOneStep = true;
 				}
 			}
-			/*******´¦ÀíĞ¡Êıµã******/
+			/*******å¤„ç†å°æ•°ç‚¹******/
 			if( shu1[s1.xb]=='.' || shu2[s2.xb]=='.' )
 			{
 				startPoint = i +1;
@@ -459,20 +459,20 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 			}
 		}
 		
-		/*****ÔËËãºËĞÄ*****/
+		/*****è¿ç®—æ ¸å¿ƒ*****/
 		if(mode != 4)
 		{
 			plusUnit(&s1,&s2,result,&i,mode);
 		}
 		else
-		{	/**Èç¹û±»³ıÊıÎ»Êı±È³ıÊıÎ»ÊıÉÙ**/
+		{	/**å¦‚æœè¢«é™¤æ•°ä½æ•°æ¯”é™¤æ•°ä½æ•°å°‘**/
 			if(yu->length < s2.length)
 			{
-				result[i]=0;/**±»³ıÊıĞ¡ÓÚ³ıÊı£¬ÉÌÎªÁã**/
-			}	 /**Èç¹û±»³ıÊıÎ»ÊıºÍ³ıÊıÎ»ÊıÏàµÈ**/
+				result[i]=0;/**è¢«é™¤æ•°å°äºé™¤æ•°ï¼Œå•†ä¸ºé›¶**/
+			}	 /**å¦‚æœè¢«é™¤æ•°ä½æ•°å’Œé™¤æ•°ä½æ•°ç›¸ç­‰**/
 			else if( yu->length == s2.length && \
 			judgeSmallerInt(yu2,s2.shuZi,yu->length -1,s2.length -1) )
-			{	/**ÄÇ¾Í¿´¿´±»³ıÊıÊÇ·ñ¸üĞ¡**/
+			{	/**é‚£å°±çœ‹çœ‹è¢«é™¤æ•°æ˜¯å¦æ›´å°**/
 				result[i]=0;
 			}
 			else
@@ -482,14 +482,14 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 					result[i] = (yu2[0] - '0') / (s2.shuZi[0] - '0');
 				}
 				else
-				{	/**Èç¹û±»³ıÊıÎ»Êı±È³ıÊıÎ»Êı¶à£¨×î¶àÒ²¾Í¶àÒ»Î»£©**/
+				{	/**å¦‚æœè¢«é™¤æ•°ä½æ•°æ¯”é™¤æ•°ä½æ•°å¤šï¼ˆæœ€å¤šä¹Ÿå°±å¤šä¸€ä½ï¼‰**/
 					result[i] = (yu2[0] - '0')*jinZhi + yu2[1] - '0';
 					result[i] = result[i] / (s2.shuZi[0] - '0');
 				}
 				oneCharStr[0] = result[i] + '0';
 				strcpy(buff,s2.shuZi);
-				justCopyResult(buff,buff,oneCharStr,3);
-				justCopyResult(buff,yu2,buff,2);
+				justCopyResult(buff,buff,oneCharStr,s2.length+3,3);
+				justCopyResult(buff,yu2,buff,s2.length+3,2);
 				while(buff[0]=='-')
 				{
 					result[i]--;
@@ -497,8 +497,8 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 					{
 						oneCharStr[0] = result[i] + '0';
 						strcpy(buff,s2.shuZi);
-						justCopyResult(buff,buff,oneCharStr,3);
-						justCopyResult(buff,yu2,buff,2);
+						justCopyResult(buff,buff,oneCharStr,s2.length+3,3);
+						justCopyResult(buff,yu2,buff,s2.length+3,2);
 					}
 					else
 					{
@@ -510,7 +510,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 			}
 			i++;
 		}
-		/*****ºóÆÚÍ¬²½´¦Àí*****/
+		/*****åæœŸåŒæ­¥å¤„ç†*****/
 		if(mode == 1 || mode == 2)
 		{
 			if(s1.moveOneStep)
@@ -550,13 +550,13 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 					is_syn=false;
 				}
 			}
-			i--;/**ÒÆ¶¯¡°½á¹û¡±µÄÏÂ±ê**/
+			i--;/**ç§»åŠ¨â€œç»“æœâ€çš„ä¸‹æ ‡**/
 		}
 	}
-	/********************ÕûÀí×îÖÕÊı¾İ**********************/
+	/********************æ•´ç†æœ€ç»ˆæ•°æ®**********************/
 	if(is_DeBugMode)
 	{
-		printf("½á¹û³õÊ¼Êı¾İresult:");
+		printf("ç»“æœåˆå§‹æ•°æ®result:");
 		for(i2=0;i2<minSize;i2++)
 			printf("%c",result[i2]+'0');
 		printf("\n");
@@ -584,12 +584,12 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 	if(i<0)
 		i=0;
 	while(result[i]==0 && i+1 != startPoint && i < minSize -1 )
-		i++;/***³ıÈ¥ÕûÊı²¿·ÖµÄ¸ßÎ»Áã***/
+		i++;/***é™¤å»æ•´æ•°éƒ¨åˆ†çš„é«˜ä½é›¶***/
 	tmpSnum.length = minSize;
 	tmpSnum.xb = i;
 	tmpSnum.shuZi = NULL;
 	tmpSnum.xsd = startPoint;
-	/*******************×ª»¯´ğ°¸´æ´¢¿Õ¼ä***********************/
+	/*******************è½¬åŒ–ç­”æ¡ˆå­˜å‚¨ç©ºé—´***********************/
 	if(headspace || !is_positive)
 		flag1 = true;
 	else
@@ -604,7 +604,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 			while(tmpSnum.shuZi[++i]!='\0');
 			buff = (char *)malloc(sizeof(char)*(i+5));
 			if(buff == NULL)
-				exit(444);
+				memeryIsNotEnough();
 			memset(buff,'0',i+4);
 			buff[i-1]='1';
 			buff[i]='\0';
@@ -629,8 +629,8 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 		tmpSnum.shuZi[0]='-';
 	if(is_DeBugMode)
 	{
-		printf("½á¹û×îÖÕÊı¾İresult:%s\n",tmpSnum.shuZi);
-		printf("***»ã±¨Íê±Ï***************************\n");
+		printf("ç»“æœæœ€ç»ˆæ•°æ®result:%s\n",tmpSnum.shuZi);
+		printf("***æ±‡æŠ¥å®Œæ¯•***************************\n");
 	}
 	return tmpSnum.shuZi;
 }
@@ -720,11 +720,11 @@ void covertInt2Char(char *result,snum *aim,bool headspace)
 		i = aim->length - aim->xb + 2;
 	charResult=(char *)malloc(sizeof(char)*i );
 	if(charResult == NULL)
-		exit(444);
+		memeryIsNotEnough();
 	for( i = aim->xb, i2 = 0 ; i < aim->length ; i++ )
 	{
 		if(i2==0 && headspace)
-			charResult[i2++]=' ';//Ô¤Áô·ûºÅÎ»
+			charResult[i2++]=' ';//é¢„ç•™ç¬¦å·ä½
 		if(i == aim->xsd)
 			if(aim->xsd != -1)
 				charResult[i2++]='.';
@@ -735,14 +735,20 @@ void covertInt2Char(char *result,snum *aim,bool headspace)
 	aim->shuZi = charResult;
 	return;
 }
-void justCopyResult(char *result,char *num1,char *num2,int mode)
+void justCopyResult(char *result,char *num1,char *num2,int size,int mode)
 {
-	if(result == NULL || \
-	num1 == NULL || \
-	num2 == NULL || \
+	if(result == NULL || size <=0 || \
+	num1 == NULL || num2 == NULL || \
 	mode <0 || mode >3 )
 		exit(250);
+	int i=0;
 	char *buff = bigNumCompute(num1,num2,false,mode,0,NULL);
+	while(buff[++i]!='\0');
+	if(i>size)
+	{
+		printf("\n\nOut of memery!\n\n");
+		exit(251);
+	}
 	strcpy(result,buff);
 	free(buff);
 	return;
@@ -771,11 +777,11 @@ void jumpUselessChar(char **shuZi)
 {
 	int i=0;
 	while((*shuZi)[i]==' ')
-		(*shuZi)++;/***³ıÈ¥¿Õ¸ñ***/
+		(*shuZi)++;/***é™¤å»ç©ºæ ¼***/
 	i=serialZeroCount(*shuZi,-1);
-	/***³ıÈ¥ÕûÊı²¿·ÖµÄ¸ßÎ»Áã***/
+	/***é™¤å»æ•´æ•°éƒ¨åˆ†çš„é«˜ä½é›¶***/
 	if((*shuZi)[i]=='.' || (*shuZi)[i]=='\0')
-		(*shuZi)=(*shuZi) + i -1; /**ÖÁÉÙ±£ÁôÕûÊı²¿·ÖµÄ¸öÎ»Êı**/
+		(*shuZi)=(*shuZi) + i -1; /**è‡³å°‘ä¿ç•™æ•´æ•°éƒ¨åˆ†çš„ä¸ªä½æ•°**/
 	else
 		(*shuZi)=(*shuZi) + i ;
 	return;
@@ -830,8 +836,8 @@ int justGetNum(void)
 		}
 		if(b[i]=='\0' && i!=0)
 			break;
-		printf("\nÇëÊäÈëÒ»¸öÊı×Ö£¡\n");
-		printf("ÇëÊäÈë£º");
+		printf("\nè¯·è¾“å…¥ä¸€ä¸ªæ•°å­—ï¼\n");
+		printf("è¯·è¾“å…¥ï¼š");
 	}
 	return result;
 }
@@ -843,12 +849,12 @@ int limitInputNum(int min,int max)
 		result=justGetNum();
 		if(result>=min && result<=max)
 			break;
-		printf("\n³¬ÏŞ£¡ÇëÊäÈëºÏÀíµÄÕı³£Öµ£¡\n");
+		printf("\nè¶…é™ï¼è¯·è¾“å…¥åˆç†çš„æ­£å¸¸å€¼ï¼\n");
 	}
 	return result;
 }
 bool judgeSmallerNum(char num1[],char num2[],int s1end,int s2end)
-{/**·µ»ØfalseÒâÎ¶×Ånum1>=num2**/
+{/**è¿”å›falseæ„å‘³ç€num1>=num2**/
 	snum s1,s2;
 	jumpUselessChar(&num1);
 	jumpUselessChar(&num2);
@@ -859,16 +865,16 @@ bool judgeSmallerNum(char num1[],char num2[],int s1end,int s2end)
 	if(s1.intLength < s2.intLength)
 		return true;
 	if(s1.intLength == s2.intLength)
-	{/**´ó¼ÒÕûÊı²¿·ÖÎ»ÊıÏàÍ¬**/
+	{/**å¤§å®¶æ•´æ•°éƒ¨åˆ†ä½æ•°ç›¸åŒ**/
 		if(judgeSmallerInt(num1,num2,s1.intLength -1,s2.intLength -1))
-			return true;/**Èç¹ûÕûÊıĞ¡£¬Ğ¡Êı¾Í²»ĞèÒª±È½ÏÁË**/
+			return true;/**å¦‚æœæ•´æ•°å°ï¼Œå°æ•°å°±ä¸éœ€è¦æ¯”è¾ƒäº†**/
 		if(strcmp2(num1,num2,s1.intLength-1))
 		{
 			if(!s2.xsIsZero)
 			{
 				if(s1.xsIsZero)
 					return true;
-				return judgeSmallerXS(num1 + s1.xsd +1 , num2 + s2.xsd +1 ,s1.fractionLength , s2.fractionLength );/**¶¼ÓĞĞ¡Êı£¬Ò»¾ö¸ßÏÂ**/
+				return judgeSmallerXS(num1 + s1.xsd +1 , num2 + s2.xsd +1 ,s1.fractionLength , s2.fractionLength );/**éƒ½æœ‰å°æ•°ï¼Œä¸€å†³é«˜ä¸‹**/
 			}
 		}
 	}
@@ -880,7 +886,7 @@ bool judgeSmallerInt(char num1[],char num2[],int s1end,int s2end)
 		return false;
 	if(s1end < s2end)
 		return true;
-	int i;/**Ö´ĞĞµ½Õâ£¬ËµÃ÷Î»ÊıÒ»ÖÂ**/
+	int i;/**æ‰§è¡Œåˆ°è¿™ï¼Œè¯´æ˜ä½æ•°ä¸€è‡´**/
 	for(i=0; i <= s1end ; i++)
 	{
 		if(num1[i] < num2[i])
@@ -888,7 +894,7 @@ bool judgeSmallerInt(char num1[],char num2[],int s1end,int s2end)
 		if(num1[i] > num2[i])
 			return false;
 	}
-	return false;/**Ö´ĞĞµ½Õâ£¬ËµÃ÷Á½ÊıÏàµÈ£¬²»¹ınum1È·Êµ²»±Ènum2´ó**/
+	return false;/**æ‰§è¡Œåˆ°è¿™ï¼Œè¯´æ˜ä¸¤æ•°ç›¸ç­‰ï¼Œä¸è¿‡num1ç¡®å®ä¸æ¯”num2å¤§**/
 }
 bool judgeSmallerXS(char num1[],char num2[],int s1end,int s2end)
 {
@@ -940,7 +946,7 @@ void testSystem(char *a,char *b)
 	for(i=0;i<20;i++)
 		printf("|%-4d|%-8s|%-8s|\n",i+1,item[i][0],item[i][1]);
 	printf("+----+--------+--------+\n");
-	/*¼Æ»®Éè¼Æ³É¿ÉÒÔ×Ô¶¯Ñ­»·²âÊÔÈ«²¿Êı¾İµÄtestSystem*/
+	/*è®¡åˆ’è®¾è®¡æˆå¯ä»¥è‡ªåŠ¨å¾ªç¯æµ‹è¯•å…¨éƒ¨æ•°æ®çš„testSystem*/
 	printf("Please enter a choice:");
 	scanf("%d",&i);
 	i--;
@@ -951,35 +957,49 @@ void testSystem(char *a,char *b)
 }
 char *getPI(void)
 {
-	char shu1[preOfPI],shu2[preOfPI],num1[preOfPI],num2[preOfPI];
+	char *shu1,*shu2,*num1,*num2;
 	char *buff,*buff2;
 	int i,i2;
 	buff = buff2 = NULL;
-	memset(shu1,0,preOfPI);
-	memset(shu2,0,preOfPI);
-	memset(num1,0,preOfPI);
-	memset(num2,0,preOfPI);
+	shu1 = (char *)malloc(sizeof(char)*(readyNumSize +1));
+	shu2 = (char *)malloc(sizeof(char)*(readyNumSize +1));
+	num1 = (char *)malloc(sizeof(char)*(readyNumSize +1));
+	num2 = (char *)malloc(sizeof(char)*(readyNumSize +1));
+	if( !(shu1 && shu2 && num1 && num2) )
+		memeryIsNotEnough();
+	memset(shu1,0,readyNumSize);
+	memset(shu2,0,readyNumSize);
+	memset(num1,0,readyNumSize);
+	memset(num2,0,readyNumSize);
 	num1[0]='2';
 	num2[0]='1';
 	shu1[0]='2';
 	shu2[0]='1';
-	for(i=1;i<preOfPI;i++)
+	for(i=1;i< preOfPI;i++)
 	{
 		if(is_DeBugMode)
-			printf("\n\n---ÕâÊÇµÚ%d´ÎÑ­»·-------\n",i);
+			printf("\n\n---è¿™æ˜¯ç¬¬%dæ¬¡å¾ªç¯-------\n",i);
 		if( i % 2 == 0 )
 		{
-			justCopyResult(num1,num1,"2",1);
+			justCopyResult(num1,num1,"2",readyNumSize,1);
 		}
 		else
 		{
-			justCopyResult(num2,num2,"2",1);
+			justCopyResult(num2,num2,"2",readyNumSize,1);
 		}
-		justCopyResult(shu1,shu1,num1,3);
-		justCopyResult(shu2,shu2,num2,3);
+		justCopyResult(shu1,shu1,num1,readyNumSize,3);
+		justCopyResult(shu2,shu2,num2,readyNumSize,3);
 	}
 	if(is_DeBugMode)
-		printf("\n\n---Ñ­»·½áÊø-------\n");
-	justCopyResult(shu1,shu1,"2",3);
+		printf("\n\n---å¾ªç¯ç»“æŸ-------\n");
+	justCopyResult(shu1,shu1,"2",readyNumSize,3);
+	if(is_DeBugMode)
+		printf("è¢«é™¤æ•°ï¼š%s\né™¤æ•°ï¼š%s\n\n",shu1,shu2);
 	return bigNumCompute(shu1,shu2,false,4,1000,NULL);
+}
+void memeryIsNotEnough(void)
+{
+	puts("Sorry!Yours mechine did not have enough memery!");
+	puts("Program terminated!");
+	exit(444);
 }
