@@ -73,7 +73,7 @@ int main(void)
 	/*puts(result=getZeroStr(6));
 	printf("strSize=%d\n",_msize(result));
 	testSystem(shu1,shu2);
-	i=4;precision=500;
+	i=4;precision=500;*/
 	printf("Please define the length of Num:");
 	i = limitInputNum(1,2100000000);
 	shu1 = (char *)malloc(sizeof(char)*(i+1));
@@ -95,9 +95,8 @@ int main(void)
 	if(precision<0 || i<0 || i>4)
 		exit(250);
 	printf("\n\n");
-	*/
-	result = getPI();
-	//result=bigNumCompute(shu1,shu2,false,i,precision,NULL);
+	result=bigNumCompute(shu1,shu2,false,i,precision,NULL);
+	//result = getPI();
 	while(result[++i]!='\0');
 	printf("Result=%s\n",result);
 	printf("\nstrlen=%d\n",i);
