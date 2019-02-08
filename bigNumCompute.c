@@ -2,28 +2,30 @@
 #include<stdlib.h>
 #include<stdbool.h>
 #include<string.h>
-#define preOfPI 106
-#define readyNumSize 500
+#include<time.h>
 struct num{
 	char *shuZi;
 	int xsd;    /*xsd即小数点，记录小数点的下标 (radix point)*/
 	int length;   /*length即数字的数组长度*/
 	int intLength; /*intLength即整数部分的长度*/
 	int fractionLength; /*fractionLength即小数部分的长度*/
-	//int validIntStart; /*非零数起始下标*/
 	int xb; /*xb即下标 (position)*/
 	bool is_positive;   /*判断是否为正数*/
 	bool intIsZero;     /*判断整数部分是否为零*/
 	bool xsIsZero;     /*判断小数部分是否为零*/
 	bool moveOneStep;   /*仅移动一步，值为真时，下标应减一*/
+	//int validIntStart; /*非零数起始下标*/
 };
 typedef struct num    snum;
 
-/**定义进制，范围应在char的大小以内**/
+/*jinZhi即进制，范围应在char的大小以内*/
 int jinZhi = 10;  /*此处定义为十进制*/
+char mainMode = 'a'-1;
 
 const bool is_DeBugMode=false;
 int times=0;
+long int preOfPI=5000;
+clock_t start,tmpNow,finish;
 
 /*mode=1:plus,mode=2:minus,mode=3:multiply,mode=4:divide;
 *模式1-4分别为加减乘除
@@ -36,10 +38,15 @@ void plusUnit(snum *s1,snum *s2,char *result,int *i,int mode);
 
 /*limitSize允许外部传入数据以控制函数分析范围，如果不是正数，则默认读完整个数组，默认最后一位是结束符（'\0'）*/
 void analyzeNum(snum *num,int limitSize);
-/*顾名思义，covertInt2Char即整型值转换成字符型值*/
-void covertInt2Char(char *result,snum *aim,bool headspace);
+/*顾名思义，covertResult即将“结果”转换成目标字符串*/
+void covertResult(char *result,snum *aim,bool headspace);
+char *covertInt2Char(long int aim);
+int getChar2Int(char *src,int end);
 void justCopyResult(char *result,char *num1,char *num2,int size,int mode);
-
+/*justOverwriteResult函数与justCopyResult函数不一样，
+*此函数会free掉result指针，然后传递“结果”指针*/
+void justOverwriteResult(char **result,char *num1,char *num2,int mode);
+char *justCopyStr(char *src,int moreSpace);
 int serialZeroCount(char *shuZi,int s1end);
 /*除去字符型数组中的无效字符*/
 void jumpUselessChar(char **ShuZi);
@@ -64,6 +71,8 @@ void testSystem(char *a,char *b);
 void memeryIsNotEnough(void);
 /*Have not finished yet...*/
 char *getPI(void);
+char *getFactorial(char num1[]);
+char *getDoubleFactorial(char num1[]);
 
 int main(void)
 {
@@ -86,7 +95,8 @@ int main(void)
 	scanf("%s",shu2);
 	printf("\nNumber init is completed!!!\n\n");
 	printf("Please choose a mode:");
-	scanf("%d",&i);
+	i = limitInputNum(1,4);
+	mainMode = mainMode + i;
 	if(i == 4)
 	{
 		printf("Please input precision:");
@@ -95,10 +105,11 @@ int main(void)
 	if(precision<0 || i<0 || i>4)
 		exit(250);
 	printf("\n\n");
+	start = clock();
 	result=bigNumCompute(shu1,shu2,false,i,precision,NULL);
 	//result = getPI();
 	while(result[++i]!='\0');
-	printf("Result=%s\n",result);
+	printf("\n\nResult=%s\n",result);
 	printf("\nstrlen=%d\n",i);
 	getchar();
 	/*printf("strSize=%d\n",_msize(result));*/
@@ -115,11 +126,11 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 	*但不同算法，由于i的移动方向不一样
 	*startPoint的值并不是统一的startPoint = i*/
 	int startPoint=-1;
-	char *result,*yu2,*buff;
+	char *result,*yu,*buff;
 	char oneCharStr[2]={'0','\0'},zeroCopy[2]={'0','\0'};
 	i=i2=tmpInt=0;
 	flag1=flag2=false;
-	result = yu2 = buff = tmpCharPoint = shu1src = shu2src = NULL;
+	result = yu = buff = tmpCharPoint = shu1src = shu2src = NULL;
 	if(is_DeBugMode)
 	{
 		printf("***这是第%d次运行计算***************************\n",times++);
@@ -256,7 +267,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 		if(mode==2)
 			return bigNumCompute(shu2,shu1,false,2,0,NULL);
 	}
-	snum s1,s2,tmpSnum,*yu=NULL;
+	snum s1,s2,tmpSnum;
 	s1.is_positive = s2.is_positive = true;
 	if(flag1)
 		s1.is_positive = false;
@@ -295,8 +306,6 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 			/**若除数为零**/
 			if(mode == 4)
 			{
-				puts(shu1src);
-				puts(shu2src);
 				free(shu2src);
 				/**检查除数是否为零**/
 				if(s2.intIsZero && s2.xsIsZero)
@@ -316,6 +325,8 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 	minSize = getMaxInt(s1.intLength, s2.intLength) + \
 		getMaxInt(s1.fractionLength, s2.fractionLength) + \
 		precision + 2 ;/*预留2位空间做进位处理*/
+	if(mode == 3)
+		minSize = s1.length + s2.length +2;
 	result=(char *)malloc(sizeof(char)*(minSize +8));
 	if(result == NULL)
 		memeryIsNotEnough();
@@ -328,22 +339,14 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 		if(s1.xsd == -1 )
 			minSize--;
 		result[minSize]='\0';
-		yu = (snum *)malloc(sizeof(snum));
-		if(yu == NULL)
-			memeryIsNotEnough();
-		yu->shuZi = (char *)malloc(sizeof(char)*(s2.length +8));
+		yu = (char *)malloc(sizeof(char)*(s2.length +8));
 		buff = (char *)malloc(sizeof(char)*(s2.length +8));
-		yu2 = yu->shuZi;
-		if(yu2 == NULL || buff == NULL)
+		if(yu == NULL || buff == NULL)
 			memeryIsNotEnough();
-		memset(yu2,'\0',s2.length +4);
+		memset(yu,'\0',s2.length +4);
 		memset(buff,'\0',s2.length +4);
-		yu2[0]='1';
-		analyzeNum(yu,-1);
-		yu2[0]='\0';
-		yu->length = 0;
-		//yu2[yu->length++]=shu1[s1.xb++];
-		yu2[yu->length]='\0';
+		yu[0]='\0';
+		i2=0;
 	}
 	/********************运算框架***********************/
 	s1.moveOneStep = s2.moveOneStep = is_syn = flag1 = flag2 = false;
@@ -352,6 +355,8 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 	i=minSize-1;
 	if(mode == 4)
 		s1.xb = i = 0;
+	else if(mode != 3)
+		tmpInt = s1.length -1 + s2.length -1;
 	while(  (!flag1 || !flag2) && i>=0  )
 	{/*****乘法和除法都需要需要异步处理*****/
 		if(mode == 3)
@@ -369,18 +374,18 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 				startPoint = i;
 				s1.xb++;
 			}
-			if( i == minSize || (precision==0 && flag1 && yu2[0]=='0') )
+			if( i == minSize || (precision==0 && flag1 && yu[0]=='0') )
 			{
-				//printf("\n最终余数：%s\n",yu2);
-				if(yu2[0]!='0' && result[i-1] >= 5)
+				//printf("\n最终余数：%s\n",yu);
+				if(yu[0]!='0' && result[i-1] >= 5)
 					need_roundUp = true;
 				minSize--;/**丢弃用于判断四舍五入的最后一位**/
 				break;
 			}
-			if(yu2[0]=='0')
-				yu->length = 0;
-			yu2[yu->length++]=s1.shuZi[s1.xb];
-			yu2[yu->length]='\0';
+			if(yu[0]=='0')
+				i2 = 0;
+			yu[i2++]=s1.shuZi[s1.xb];
+			yu[i2]='\0';
 			/**判断原始被除数是否读完**/
 			if(!flag1)
 			{	/**如果读完了**/
@@ -465,47 +470,127 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 		}
 		else
 		{	/**如果被除数位数比除数位数少**/
-			if(yu->length < s2.length)
+			if(i2 < s2.length)
 			{
 				result[i]=0;/**被除数小于除数，商为零**/
 			}	 /**如果被除数位数和除数位数相等**/
-			else if( yu->length == s2.length && \
-			judgeSmallerInt(yu2,s2.shuZi,yu->length -1,s2.length -1) )
+			else if( i2 == s2.length && \
+			judgeSmallerInt(yu,s2.shuZi,i2-1,s2.length -1) )
 			{	/**那就看看被除数是否更小**/
 				result[i]=0;
 			}
 			else
 			{
-				if(yu->length == s2.length)
+				if(i2== s2.length)
 				{
-					result[i] = (yu2[0] - '0') / (s2.shuZi[0] - '0');
+					result[i] = (yu[0] - '0') / (s2.shuZi[0] - '0');
 				}
 				else
 				{	/**如果被除数位数比除数位数多（最多也就多一位）**/
-					result[i] = (yu2[0] - '0')*jinZhi + yu2[1] - '0';
-					result[i] = result[i] / (s2.shuZi[0] - '0');
+					result[i] = 9;
+					tmpInt = result[i] * (s2.shuZi[0] - '0');
+					while(tmpInt > getChar2Int(yu,2))
+					{
+						result[i]--;
+						tmpInt = result[i] * (s2.shuZi[0] - '0');
+					}
 				}
+				if(i>3)
+				{
+					if(result[i] >= 10 || result[i] < 0)
+					{
+						printf("\n产生危险数值！\n");
+						printf("此时除数:%s\n",s2.shuZi);
+						printf("共计%d位\n",s2.length);
+						printf("此时余数:%s\n",yu);
+						printf("共计%d位\n",i2);
+						printf("算得初始商值为:%d\n",result[i]);
+						printf("上次商值为:%d\n",result[i-1]);
+						printf("上上次商值为:%d\n",result[i-2]);
+						getchar();
+						result[i]=1;
+					}
+					if(result[i]==0&&result[i-1]==0)
+					{
+						printf("\n貌似偏离预期！\n");
+						printf("此时除数:%s\n",s2.shuZi);
+						printf("共计%d位\n",s2.length);
+						printf("此时余数:%s\n",yu);
+						printf("共计%d位\n",i2);
+						printf("算得初始商值为:%d\n",result[i]);
+						printf("上次商值为:%d\n",result[i-1]);
+						printf("上上次商值为:%d\n",result[i-2]);
+						getchar();
+					}
+				}
+				
 				oneCharStr[0] = result[i] + '0';
-				strcpy(buff,s2.shuZi);
-				justCopyResult(buff,buff,oneCharStr,s2.length+3,3);
-				justCopyResult(buff,yu2,buff,s2.length+3,2);
+				buff = justCopyStr(s2.shuZi,0);
+				justOverwriteResult(&buff,buff,oneCharStr,3);
+				justOverwriteResult(&buff,yu,buff,2);
 				while(buff[0]=='-')
 				{
 					result[i]--;
-					if(result[i]!=0)
+					if(result[i]>0)
 					{
+						free(buff);
 						oneCharStr[0] = result[i] + '0';
-						strcpy(buff,s2.shuZi);
-						justCopyResult(buff,buff,oneCharStr,s2.length+3,3);
-						justCopyResult(buff,yu2,buff,s2.length+3,2);
+						buff = justCopyStr(s2.shuZi,0);
+						justOverwriteResult(&buff,buff,oneCharStr,3);
+						justOverwriteResult(&buff,yu,buff,2);
 					}
 					else
 					{
-						break;
+						if(is_DeBugMode)
+						{
+							printf("\n答案错误！\n");
+							printf("此时除数:%s\n",s2.shuZi);
+							printf("共计%d位\n",s2.length);
+							printf("此时余数:%s\n",yu);
+							printf("共计%d位\n",i2);
+							printf("算得初始商值为:%d\n",result[i]);
+							if(i>1)
+								printf("上次商值为:%d\n",result[i-1]);
+							if(i>2)
+								printf("上上次商值为:%d\n",result[i-2]);
+							getchar();
+						}
+						exit(251);
 					}
 				}
-				strcpy(yu2,buff);
-				analyzeNum(yu,-1);
+				if(buff[0]=='-' )
+				{
+					printf("\n答案错误！\n");
+					printf("此时除数:%s\n",s2.shuZi);
+					printf("共计%d位\n",s2.length);
+					printf("此时余数:%s\n",yu);
+					printf("共计%d位\n",i2);
+					printf("算得初始商值为:%d\n",result[i]);
+					if(i>1)
+						printf("上次商值为:%d\n",result[i-1]);
+					if(i>2)
+						printf("上上次商值为:%d\n",result[i-2]);
+					getchar();
+				}
+				free(yu);
+				yu = justCopyStr(buff,s2.length);
+				free(buff);
+				i2=0;
+				while(yu[++i2]!='\0');
+			}
+			if( is_DeBugMode && i % 100 == 0)
+			{
+				printf("目前算至第%d位",(i/100)*100-1);
+				printf("此时除数:%s\n",s2.shuZi);
+				printf("共计%d位\n",s2.length);
+				printf("此时余数:%s\n",yu);
+				printf("共计%d位\n",i2);
+				printf("算得商值为:%d\n",result[i]);
+				if(i>1)
+					printf("上次商值为:%d\n",result[i-1]);
+				if(i>2)
+					printf("上上次商值为:%d\n",result[i-2]);
+				//getchar();
 			}
 			i++;
 		}
@@ -551,6 +636,26 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 			}
 			i--;/**移动“结果”的下标**/
 		}
+		if(mainMode - 'a' +1 == mode || is_DeBugMode)
+		{
+			oneCharStr[0] = mainMode;
+			if(is_DeBugMode)
+				oneCharStr[0] = 'a' -1 +mode;
+			switch(oneCharStr[0])
+			{
+				case 'a':case 'b':
+					printf("\r\r已完成%lf%%，耗时%lf秒%50c",((tmpInt - s1.xb - s2.xb)*100.000)/tmpInt,(double)(clock()-start)/CLOCKS_PER_SEC,' ');
+					break;
+				case 'c':
+					printf("\r\r已完成%lf%%，耗时%lf秒%50c",((s2.length-1-s2.xb)*100.000)/s2.length,(double)(clock()-start)/CLOCKS_PER_SEC,' ');
+					break;
+				case 'd':
+					printf("\r\r已完成%lf%%，耗时%lf秒%50c",(i*100.000)/minSize,(double)(clock()-start)/CLOCKS_PER_SEC,' ');
+					break;
+				default:
+					break;
+			}
+		}
 	}
 	/********************整理最终数据**********************/
 	if(is_DeBugMode)
@@ -576,7 +681,6 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 	{
 		minSize = i;
 		i=0;
-		free(buff);
 		free(shu1src);
 		free(shu2src);
 	}
@@ -593,7 +697,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 		flag1 = true;
 	else
 		flag1 = false;
-	covertInt2Char(result,&tmpSnum,flag1);
+	covertResult(result,&tmpSnum,flag1);
 
 	if(mode == 4)
 	{
@@ -615,20 +719,16 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 			tmpSnum.shuZi = tmpCharPoint;
 		}
 		if(remainder != NULL)
-		{
-			(*remainder) = yu->shuZi;
-		}
+			(*remainder) = yu;
 		else
-		{
-			free(yu->shuZi);
 			free(yu);
-		}
 	}
 	if(!is_positive)
 		tmpSnum.shuZi[0]='-';
 	if(is_DeBugMode)
 	{
 		printf("结果最终数据result:%s\n",tmpSnum.shuZi);
+		printf("共计%d位\n",strlen(tmpSnum.shuZi));
 		printf("***汇报完毕***************************\n");
 	}
 	return tmpSnum.shuZi;
@@ -709,7 +809,7 @@ void analyzeNum(snum *num,int limitSize)
 	}
 	return;
 }
-void covertInt2Char(char *result,snum *aim,bool headspace)
+void covertResult(char *result,snum *aim,bool headspace)
 {
 	int i,i2;
 	char *charResult=NULL;
@@ -734,6 +834,51 @@ void covertInt2Char(char *result,snum *aim,bool headspace)
 	aim->shuZi = charResult;
 	return;
 }
+char *covertInt2Char(long int aim)
+{
+	long int i,i2;
+	bool is_positive=true;
+	char *buff=NULL;
+	if( aim < 0 )
+	{
+		is_positive = false;
+		aim = -aim;
+	}
+	i=0;
+	i2 = aim;
+	while(i2>0)
+	{
+		i2 = i2 /10;
+		i++;
+	}
+	buff = (char *)malloc(sizeof(char)*( i +3 ));
+	if(buff == NULL)
+		memeryIsNotEnough();
+	if( aim == 0 )
+	{
+		buff[0]='0';
+		buff[1]='\0';
+		return buff;
+	}
+	i2 = aim;
+	if(!is_positive)
+		i++;
+	buff[i--]='\0';
+	do{
+		buff[i--] = i2%10 + '0';
+		i2 = i2/10;
+	}while(i2>0);
+	if(!is_positive)
+		buff[0]='-';
+	return buff;
+}
+int getChar2Int(char *src,int end)
+{
+	int i,result=0;
+	for(i=0 ; i < end ;i++)
+		result = result*jinZhi + (src[i] - '0');
+	return result;
+}
 void justCopyResult(char *result,char *num1,char *num2,int size,int mode)
 {
 	if(result == NULL || size <=0 || \
@@ -751,6 +896,26 @@ void justCopyResult(char *result,char *num1,char *num2,int size,int mode)
 	strcpy(result,buff);
 	free(buff);
 	return;
+}
+void justOverwriteResult(char **result,char *num1,char *num2,int mode)
+{
+	if(result == NULL || \
+	num1 == NULL || num2 == NULL || \
+	mode <0 || mode >3 )
+		exit(250);
+	char *buff = bigNumCompute(num1,num2,false,mode,0,NULL);
+	free((*result));
+	(*result)=buff;
+	return;
+}
+char *justCopyStr(char *src,int moreSpace)
+{
+	char *tmpCharPointer=NULL;
+	tmpCharPointer = (char *)malloc(sizeof(char)*(strlen(src)+2+moreSpace));
+	if(tmpCharPointer == NULL)
+		memeryIsNotEnough();
+	strcpy(tmpCharPointer,src);
+	return tmpCharPointer;
 }
 int serialZeroCount(char *shuZi,int s1end)
 {
@@ -926,7 +1091,6 @@ bool strcmp2(char str1[],char str2[],int end)
 void testSystem(char *a,char *b)
 {
 	int i,i2;
-	char *tes[3]={"999999","0.000001"};
 	char *item[23][3]={ {"12","12"} , \
 		{"12","11"} , {"12","1.2"} , \
 		{"1.2","1.2"} , {"0","0"} , \
@@ -956,45 +1120,89 @@ void testSystem(char *a,char *b)
 }
 char *getPI(void)
 {
-	char *shu1,*shu2,*num1,*num2;
+	char *shu1,*shu2;
 	char *buff,*buff2;
-	int i,i2;
-	buff = buff2 = NULL;
-	shu1 = (char *)malloc(sizeof(char)*(readyNumSize +1));
-	shu2 = (char *)malloc(sizeof(char)*(readyNumSize +1));
-	num1 = (char *)malloc(sizeof(char)*(readyNumSize +1));
-	num2 = (char *)malloc(sizeof(char)*(readyNumSize +1));
-	if( !(shu1 && shu2 && num1 && num2) )
+	int i;
+	buff=covertInt2Char(preOfPI);
+	shu1 = bigNumCompute("2",buff,false,3,0,NULL);
+	shu2 = bigNumCompute("2",buff,false,3,0,NULL);
+	buff2 = bigNumCompute("2",buff,false,3,0,NULL);
+	free(buff);
+	justOverwriteResult(&shu2,shu2,"1",2);
+	justOverwriteResult(&buff2,buff2,"1",1);
+
+	buff = getDoubleFactorial(shu1);
+	free(shu1);
+	shu1 = buff;
+	justOverwriteResult(&shu1,shu1,shu1,3);
+	justOverwriteResult(&shu1,shu1,"2",3);
+
+	buff = getDoubleFactorial(shu2);
+	free(shu2);
+	shu2 = buff;
+
+	justOverwriteResult(&shu2,shu2,shu2,3);
+	justOverwriteResult(&shu2,shu2,buff2,3);
+	free(buff2);
+	//if(is_DeBugMode)
+	printf("被除数：%s\n除数：%s\n\n",shu1,shu2);
+	mainMode='d';
+	start = clock();
+	buff = bigNumCompute(shu1,shu2,false,4,1000,NULL);
+	finish = clock();
+	FILE *fp=NULL;
+	fp=fopen("piOutput.txt","a");
+	fprintf(fp,"\n\npreOfPI=%ld\n\n被除数：%s\n\n被除数共计%d位\n\n除数：%s\n\n除数共计%d位\n\nResult:%s\n\n结果共计%d位\n\n耗时%lf秒\n\n",preOfPI,shu1,strlen(shu1),shu2,strlen(shu2),buff,strlen(buff),(double)(finish - start)/CLOCKS_PER_SEC);
+	fclose(fp);
+	free(shu1);
+	free(shu2);
+	return buff;
+}
+char *getFactorial(char num1[])
+{
+	int i=0,i2=1;
+	while(num1[++i]!='\0');
+	
+	char *num2=(char *)malloc(sizeof(char)*3);
+	char *buff;
+	if(num2 == NULL)
 		memeryIsNotEnough();
-	memset(shu1,0,readyNumSize);
-	memset(shu2,0,readyNumSize);
-	memset(num1,0,readyNumSize);
-	memset(num2,0,readyNumSize);
-	num1[0]='2';
-	num2[0]='1';
-	shu1[0]='2';
-	shu2[0]='1';
-	for(i=1;i< preOfPI;i++)
+	num2[0] = '1';
+	num2[1] = '\0';
+	if(i == 1 && num1[0]=='0')
+		return num2;
+	buff = justCopyStr(num1,0);
+	
+	while(judgeSmallerInt(num2,num1,i2,i))
 	{
-		if(is_DeBugMode)
-			printf("\n\n---这是第%d次循环-------\n",i);
-		if( i % 2 == 0 )
-		{
-			justCopyResult(num1,num1,"2",readyNumSize,1);
-		}
-		else
-		{
-			justCopyResult(num2,num2,"2",readyNumSize,1);
-		}
-		justCopyResult(shu1,shu1,num1,readyNumSize,3);
-		justCopyResult(shu2,shu2,num2,readyNumSize,3);
+		i2=0;
+		justOverwriteResult(&buff,buff,num2,3);
+		justOverwriteResult(&num2,num2,"1",1);
+		while(num2[++i2]!='\0');
 	}
-	if(is_DeBugMode)
-		printf("\n\n---循环结束-------\n");
-	justCopyResult(shu1,shu1,"2",readyNumSize,3);
-	if(is_DeBugMode)
-		printf("被除数：%s\n除数：%s\n\n",shu1,shu2);
-	return bigNumCompute(shu1,shu2,false,4,1000,NULL);
+	return buff;
+}
+char *getDoubleFactorial(char num1[])
+{
+	int i=0,i2=0;
+	while(num1[++i]!='\0');
+	
+	char *num2=justCopyStr("1",0);
+	char *buff;
+	if(i == 1 && num1[0]=='0')
+		return num2;
+	free(num2);
+	num2=justCopyStr(num1,0);
+	buff=justCopyStr(num1,0);
+	while(num2[++i2]!='\0');
+	while(!judgeSmallerInt(num2,"3",i2,1))
+	{
+		i2=0;
+		justOverwriteResult(&num2,num2,"2",2);
+		justOverwriteResult(&buff,buff,num2,3);
+		while(num2[++i2]!='\0');
+	}
+	return buff;
 }
 void memeryIsNotEnough(void)
 {
