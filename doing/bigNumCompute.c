@@ -2,6 +2,7 @@
 #include<stdlib.h>
 #include<stdbool.h>
 #include<string.h>
+#include<time.h>
 struct num{
 	char *shuZi;
 	int xsd;    /*xsd即小数点，记录小数点的下标 (radix point)*/
@@ -22,7 +23,8 @@ int jinZhi = 10;  /*此处定义为十进制*/
 
 const bool is_DeBugMode=false;
 int times=0;
-long int preOfPI=10000;
+long int preOfPI=50000;
+clock_t start,tmpNow,finish;
 
 /*mode=1:plus,mode=2:minus,mode=3:multiply,mode=4:divide;
 *模式1-4分别为加减乘除
@@ -101,12 +103,13 @@ int main(void)
 	if(precision<0 || i<0 || i>4)
 		exit(250);
 	printf("\n\n");
+	start = clock();
 	result=bigNumCompute(shu1,shu2,false,i,precision,NULL);*/
 	result = getPI();
 	while(result[++i]!='\0');
 	printf("Result=%s\n",result);
 	printf("\nstrlen=%d\n",i);
-	//getchar();
+	getchar();
 	/*printf("strSize=%d\n",_msize(result));*/
 	return 0;
 }
@@ -350,6 +353,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 	i=minSize-1;
 	if(mode == 4)
 		s1.xb = i = 0;
+	
 	while(  (!flag1 || !flag2) && i>=0  )
 	{/*****乘法和除法都需要需要异步处理*****/
 		if(mode == 3)
@@ -586,6 +590,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 				//getchar();
 			}
 			i++;
+			printf("/r/r已完成%lf%%，耗时%lf秒",i/100.0,(finish - clock())/CLOCKS_PER_SEC );
 		}
 		/*****后期同步处理*****/
 		if(mode == 1 || mode == 2)
@@ -1064,7 +1069,6 @@ bool strcmp2(char str1[],char str2[],int end)
 void testSystem(char *a,char *b)
 {
 	int i,i2;
-	char *tes[3]={"999999","0.000001"};
 	char *item[23][3]={ {"12","12"} , \
 		{"12","11"} , {"12","1.2"} , \
 		{"1.2","1.2"} , {"0","0"} , \
@@ -1119,8 +1123,14 @@ char *getPI(void)
 	justOverwriteResult(&shu2,shu2,buff2,3);
 	free(buff2);
 	//if(is_DeBugMode)
-		printf("被除数：%s\n除数：%s\n\n",shu1,shu2);
+	printf("被除数：%s\n除数：%s\n\n",shu1,shu2);
+	start = clock();
 	buff = bigNumCompute(shu1,shu2,false,4,1000,NULL);
+	finish = clock();
+	FILE *fp=NULL;
+	fp=fopen("piOutput.txt","a");
+	fprintf(fp,"\n\npreOfPI=%ld\n\n被除数：%s\n\n被除数共计%d位\n\n除数：%s\n\n除数共计%d位\n\nResult:%s\n\n结果共计%d位\n\n耗时%lf秒\n\n",preOfPI,shu1,strlen(shu1),shu2,strlen(shu2),buff,strlen(buff),(finish - start)/CLOCKS_PER_SEC);
+	fclose(fp);
 	free(shu1);
 	free(shu2);
 	return buff;
