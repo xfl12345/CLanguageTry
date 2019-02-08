@@ -365,7 +365,12 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 				break;
 			i = minSize -1 - (s2.length -1 - s2.xb);
 			if(s2.shuZi[s2.xb]=='.')
+			{
 				s2.xb--;
+				startPoint = 1;
+			}
+			if(startPoint == 1)
+				i++;
 		}
 		else if(mode == 4)
 		{	/*****处理小数点*****/
@@ -674,7 +679,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 				tmpInt = tmpInt + s1.length -1 - s1.xsd;
 			if(s2.xsd != -1)
 				tmpInt = tmpInt + s2.length -1 - s2.xsd;
-			startPoint = minSize -1 - tmpInt;
+			startPoint = minSize - tmpInt;
 		}
 	}
 	else if(mode == 4)
