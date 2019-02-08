@@ -20,10 +20,11 @@ typedef struct num    snum;
 
 /*jinZhi即进制，范围应在char的大小以内*/
 int jinZhi = 10;  /*此处定义为十进制*/
+char mainMode = 'a'-1;
 
 const bool is_DeBugMode=false;
 int times=0;
-long int preOfPI=50000;
+long int preOfPI=5000;
 clock_t start,tmpNow,finish;
 
 /*mode=1:plus,mode=2:minus,mode=3:multiply,mode=4:divide;
@@ -94,7 +95,8 @@ int main(void)
 	scanf("%s",shu2);
 	printf("\nNumber init is completed!!!\n\n");
 	printf("Please choose a mode:");
-	scanf("%d",&i);
+	i = limitInputNum(1,4);
+	mainMode = mainMode + i;
 	if(i == 4)
 	{
 		printf("Please input precision:");
@@ -107,7 +109,7 @@ int main(void)
 	result=bigNumCompute(shu1,shu2,false,i,precision,NULL);*/
 	result = getPI();
 	while(result[++i]!='\0');
-	printf("Result=%s\n",result);
+	printf("\n\nResult=%s\n",result);
 	printf("\nstrlen=%d\n",i);
 	getchar();
 	/*printf("strSize=%d\n",_msize(result));*/
@@ -353,7 +355,8 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 	i=minSize-1;
 	if(mode == 4)
 		s1.xb = i = 0;
-	
+	else if(mode != 3)
+		tmpInt = s1.length -1 + s2.length -1;
 	while(  (!flag1 || !flag2) && i>=0  )
 	{/*****乘法和除法都需要需要异步处理*****/
 		if(mode == 3)
@@ -590,7 +593,6 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 				//getchar();
 			}
 			i++;
-			printf("/r/r已完成%lf%%，耗时%lf秒",i/100.0,(finish - clock())/CLOCKS_PER_SEC );
 		}
 		/*****后期同步处理*****/
 		if(mode == 1 || mode == 2)
@@ -633,6 +635,26 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 				}
 			}
 			i--;/**移动“结果”的下标**/
+		}
+		if(mainMode - 'a' +1 == mode || is_DeBugMode)
+		{
+			oneCharStr[0] = mainMode;
+			if(is_DeBugMode)
+				oneCharStr[0] = 'a' -1 +mode;
+			switch(oneCharStr[0])
+			{
+				case 'a':case 'b':
+					printf("\r\r已完成%lf%%，耗时%lf秒%50c",((tmpInt - s1.xb - s2.xb)*100.000)/tmpInt,(double)(clock()-start)/CLOCKS_PER_SEC,' ');
+					break;
+				case 'c':
+					printf("\r\r已完成%lf%%，耗时%lf秒%50c",((s2.length-1-s2.xb)*100.000)/s2.length,(double)(clock()-start)/CLOCKS_PER_SEC,' ');
+					break;
+				case 'd':
+					printf("\r\r已完成%lf%%，耗时%lf秒%50c",(i*100.000)/minSize,(double)(clock()-start)/CLOCKS_PER_SEC,' ');
+					break;
+				default:
+					break;
+			}
 		}
 	}
 	/********************整理最终数据**********************/
@@ -1124,12 +1146,13 @@ char *getPI(void)
 	free(buff2);
 	//if(is_DeBugMode)
 	printf("被除数：%s\n除数：%s\n\n",shu1,shu2);
+	mainMode='d';
 	start = clock();
 	buff = bigNumCompute(shu1,shu2,false,4,1000,NULL);
 	finish = clock();
 	FILE *fp=NULL;
 	fp=fopen("piOutput.txt","a");
-	fprintf(fp,"\n\npreOfPI=%ld\n\n被除数：%s\n\n被除数共计%d位\n\n除数：%s\n\n除数共计%d位\n\nResult:%s\n\n结果共计%d位\n\n耗时%lf秒\n\n",preOfPI,shu1,strlen(shu1),shu2,strlen(shu2),buff,strlen(buff),(finish - start)/CLOCKS_PER_SEC);
+	fprintf(fp,"\n\npreOfPI=%ld\n\n被除数：%s\n\n被除数共计%d位\n\n除数：%s\n\n除数共计%d位\n\nResult:%s\n\n结果共计%d位\n\n耗时%lf秒\n\n",preOfPI,shu1,strlen(shu1),shu2,strlen(shu2),buff,strlen(buff),(double)(finish - start)/CLOCKS_PER_SEC);
 	fclose(fp);
 	free(shu1);
 	free(shu2);
