@@ -81,8 +81,11 @@ int main(void)
 	shu1=shu2=result=NULL;
 	/*puts(result=getZeroStr(6));
 	printf("strSize=%d\n",_msize(result));
+	shu1 = (char *)malloc(sizeof(char)*(10+1));
+	shu2 = (char *)malloc(sizeof(char)*(10+1));
 	testSystem(shu1,shu2);
-	i=4;precision=500;
+	i=4;precision=200;mainMode='a'-1+i;*/
+	/*
 	printf("Please define the length of Num:");
 	i = limitInputNum(1,2100000000);
 	shu1 = (char *)malloc(sizeof(char)*(i+1));
@@ -104,7 +107,8 @@ int main(void)
 	}
 	if(precision<0 || i<0 || i>4)
 		exit(250);
-	printf("\n\n");
+	printf("\n\n");*/
+	/*
 	start = clock();
 	result=bigNumCompute(shu1,shu2,false,i,precision,NULL);*/
 	result = getPI();
@@ -365,7 +369,12 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 				break;
 			i = minSize -1 - (s2.length -1 - s2.xb);
 			if(s2.shuZi[s2.xb]=='.')
+			{
 				s2.xb--;
+				startPoint = 1;
+			}
+			if(startPoint == 1)
+				i = minSize -1 - (s2.length -1 - s2.xb -1);
 		}
 		else if(mode == 4)
 		{	/*****处理小数点*****/
@@ -674,7 +683,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 				tmpInt = tmpInt + s1.length -1 - s1.xsd;
 			if(s2.xsd != -1)
 				tmpInt = tmpInt + s2.length -1 - s2.xsd;
-			startPoint = minSize -1 - tmpInt;
+			startPoint = minSize - tmpInt;
 		}
 	}
 	else if(mode == 4)
@@ -763,7 +772,7 @@ void plusUnit(snum *s1,snum *s2,char *result,int *i,int mode)
 				result[*i] += (shu2[s2->xb]-'0') * (shu1[s1->xb]-'0');
 				if(result[*i] > jinZhi -1)
 				{
-					result[*i-1] += result[*i] / jinZhi;
+					result[*i-1] += result[*i]/jinZhi;
 					result[*i] = result[*i] % jinZhi;
 				}
 			}
@@ -1091,7 +1100,7 @@ bool strcmp2(char str1[],char str2[],int end)
 void testSystem(char *a,char *b)
 {
 	int i,i2;
-	char *item[23][3]={ {"12","12"} , \
+	char *item[25][3]={ {"12","12"} , \
 		{"12","11"} , {"12","1.2"} , \
 		{"1.2","1.2"} , {"0","0"} , \
 		{"0","-1.1"} , {"-1.1","0"} , \
@@ -1101,19 +1110,20 @@ void testSystem(char *a,char *b)
 		{"00.03","000.005"} , {"-00.03","-000.005"} , \
 		{"0.0000","6"} , {"7","0.0000"} , \
 		{"355","113"} , {"22","7"} , \
-		{"52163","16604"}  \
+		{"52163","16604"} , {"10.999","100.10"} ,  \
+		{"3.14","3.14"}
 	};
 	printf("+----+--------+--------+\n");
 	printf("|%-4s|%-8s|%-8s|\n","No.","Num1","Num2");
 	printf("+----+--------+--------+\n");
-	for(i=0;i<20;i++)
+	for(i=0;i<22;i++)
 		printf("|%-4d|%-8s|%-8s|\n",i+1,item[i][0],item[i][1]);
 	printf("+----+--------+--------+\n");
 	/*计划设计成可以自动循环测试全部数据的testSystem*/
 	printf("Please enter a choice:");
 	scanf("%d",&i);
 	i--;
-	if(i>19 || i<0)
+	if(i>21 || i<0)
 		exit(250);
 	strcpy(a,item[i][0]);
 	strcpy(b,item[i][1]);
