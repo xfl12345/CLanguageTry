@@ -30,7 +30,7 @@ clock_t start,tmpNow,finish;
 /*mode=1:plus,mode=2:minus,mode=3:multiply,mode=4:divide;
 *模式1-4分别为加减乘除
 */
-char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precision,char **remainder);
+char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,long int precision,char **remainder);
 /*加法、减法和乘法，本质上都是加法，
 *此函数为方便除法运算而设计，同时给bigNumComptue瘦身
 */
@@ -73,6 +73,9 @@ void memeryIsNotEnough(void);
 char *getPI(void);
 char *getFactorial(char num1[]);
 char *getDoubleFactorial(char num1[]);
+char *getSqrt(char num1[],long int precision);
+void getFabs(char **num);
+void plusOneUnit(char **num,bool headspace);
 
 int main(void)
 {
@@ -85,7 +88,7 @@ int main(void)
 	shu2 = (char *)malloc(sizeof(char)*(10+1));
 	testSystem(shu1,shu2);
 	i=4;precision=200;mainMode='a'-1+i;*/
-	/*
+	/**/
 	printf("Please define the length of Num:");
 	i = limitInputNum(1,2100000000);
 	shu1 = (char *)malloc(sizeof(char)*(i+1));
@@ -109,17 +112,26 @@ int main(void)
 		exit(250);
 	printf("\n\n");
 	start = clock();
-	result=bigNumCompute(shu1,shu2,false,i,precision,NULL);*/
-	result = getPI();
+	result=bigNumCompute(shu1,shu2,false,i,precision,NULL);
+	//result = getPI();
 	//result = getDoubleFactorial("10");
+	//result = getSqrt("4",4000);
 	while(result[++i]!='\0');
 	printf("\n\nResult=%s\n",result);
 	printf("\nstrlen=%d\n",i);
+	/*
+	shu1=result;
+	i=0;
+	result = bigNumCompute(shu1,shu1,false,3,0,NULL);
+	while(result[++i]!='\0');
+	printf("\n\nResult=%s\n",result);
+	printf("\nstrlen=%d\n",i);
+	*/
 	//getchar();
 	/*printf("strSize=%d\n",_msize(result));*/
 	return 0;
 }
-char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precision,char **remainder)
+char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,long int precision,char **remainder)
 {
 	int i,i2;
 	int tmpInt,minSize=0,moveStep=0;
@@ -637,7 +649,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 		}
 		if(mainMode - 'a' +1 == mode || is_DeBugMode)
 		{
-			if( i%50 == 0 || i == minSize || is_DeBugMode)
+			if( i%(minSize/1000) == 0 || i == minSize || is_DeBugMode)
 			{
 				oneCharStr[0] = mainMode;
 				if(is_DeBugMode)
@@ -711,22 +723,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,int precisio
 	if(mode == 4)
 	{
 		if(need_roundUp)
-		{
-			i = 0;
-			while(tmpSnum.shuZi[++i]!='\0');
-			buff = (char *)malloc(sizeof(char)*(i+5));
-			if(buff == NULL)
-				memeryIsNotEnough();
-			memset(buff,'0',i+4);
-			buff[i-1]='1';
-			buff[i]='\0';
-			if(startPoint != -1)
-				buff[1]='.';
-			tmpCharPoint = bigNumCompute(tmpSnum.shuZi,buff,flag1,1,0,NULL);
-			free(buff);
-			free(tmpSnum.shuZi);
-			tmpSnum.shuZi = tmpCharPoint;
-		}
+			plusOneUnit(&(tmpSnum.shuZi),flag1);
 		if(remainder != NULL)
 			(*remainder) = yu;
 		else
@@ -1262,6 +1259,85 @@ char *getDoubleFactorial(char num1[])
 	printf("完成长度百分比为%lf%%，",(i*1.000-i2+1)*100/i);
 	printf("累计耗时：%lf秒\n",(double)(clock()-startc)/CLOCKS_PER_SEC);
 	return buff;
+}
+char *getSqrt(char num1[],long int precision)
+{
+	char *result=justCopyStr("1",0);
+	char *buff,*buff2,*pre="0.1";
+	int i=1;
+	jumpUselessChar(&num1);
+	if(num1[0]=='0')
+		return num1;
+	if(precision > 0)
+	{
+		pre = (char *)malloc(sizeof(char)*(precision+4));
+		if(pre == NULL)
+			memeryIsNotEnough();
+		memset(pre,'0',precision+2);
+		pre[1]='.';
+		pre[precision+1]='1';
+		pre[precision+2]=0;
+	}
+	//buff = bigNumCompute(num1,"1",false,4,0,NULL);
+	buff = bigNumCompute(num1,result,false,1,0,NULL);
+	justOverwriteResult(&buff,buff,"0.5",3);
+	while(1)
+	{
+		//if(is_DeBugMode)
+			printf("\n第%d次算术平方根临时答案为：%s\n\r",i++,result);
+		buff2 = bigNumCompute(buff,result,false,2,0,NULL);
+		getFabs(&buff2);
+		if(judgeSmallerNum(buff2,pre,-1,-1))
+			break;
+		free(buff2);
+		free(result);
+		result = buff;
+		buff =  bigNumCompute(num1,result,false,4,precision+10,NULL);
+		justOverwriteResult(&buff,buff,result,1);
+		justOverwriteResult(&buff,buff,"0.5",3);
+	}
+	free(buff2);
+	if(result[precision+2]>='5')
+	{
+		result[precision+2]='\0';
+		plusOneUnit(&result,false);
+	}
+	result[precision+2]='\0';
+	return result;
+}
+void getFabs(char **num)
+{
+	char *num2 = *num,*buff;
+	if(num2[0]=='-')
+		buff = justCopyStr(num2+1,0);
+	else
+		return;
+	free(*num);
+	(*num) = buff;
+	return;
+}
+void plusOneUnit(char **num,bool headspace)
+{
+	char *result = *num,*tmpCharPoint,*buff;
+	int i = 0 ,startPoint = -1;
+	while(result[++i]!='\0')
+		if(result[i]=='.')
+			startPoint=i;
+	buff = (char *)malloc(sizeof(char)*(i+5));
+	if(buff == NULL)
+		memeryIsNotEnough();
+	memset(buff,'0',i+4);
+	buff[i-1]='1';
+	buff[i]='\0';
+	if(startPoint != -1)
+		buff[1]='.';
+	else
+		buff[i-2]='.';
+	tmpCharPoint = bigNumCompute(result,buff,headspace,1,0,NULL);
+	free(buff);
+	free(result);
+	(*num) = tmpCharPoint;
+	return;
 }
 void memeryIsNotEnough(void)
 {
