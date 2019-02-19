@@ -24,7 +24,7 @@ char mainMode = 'a'-1;
 
 const bool is_DeBugMode=false;
 int times=0;
-long int preOfPI=5000;
+long int preOfPI=50000;
 clock_t start,tmpNow,finish;
 
 /*mode=1:plus,mode=2:minus,mode=3:multiply,mode=4:divide;
@@ -69,6 +69,7 @@ bool judgeSmallerXS(char num1[],char num2[],int s1end,int s2end);
 bool strcmp2(char str1[],char str2[],int end);
 void testSystem(char *a,char *b);
 void memeryIsNotEnough(void);
+void reportMemerySize(char *aim,char *say);
 /*Have not finished yet...*/
 char *getPI(void);
 char *getFactorial(char num1[]);
@@ -88,7 +89,7 @@ int main(void)
 	shu2 = (char *)malloc(sizeof(char)*(10+1));
 	testSystem(shu1,shu2);
 	i=4;precision=200;mainMode='a'-1+i;*/
-	/**/
+	/*
 	printf("Please define the length of Num:");
 	i = limitInputNum(1,2100000000);
 	shu1 = (char *)malloc(sizeof(char)*(i+1));
@@ -112,8 +113,8 @@ int main(void)
 		exit(250);
 	printf("\n\n");
 	start = clock();
-	result=bigNumCompute(shu1,shu2,false,i,precision,NULL);
-	//result = getPI();
+	result=bigNumCompute(shu1,shu2,false,i,precision,NULL);*/
+	result = getPI();
 	//result = getDoubleFactorial("10");
 	//result = getSqrt("4",4000);
 	while(result[++i]!='\0');
@@ -737,6 +738,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,long int pre
 		printf("共计%d位\n",strlen(tmpSnum.shuZi));
 		printf("***汇报完毕***************************\n");
 	}
+	free(result);
 	return tmpSnum.shuZi;
 }
 void plusUnit(snum *s1,snum *s2,char *result,int *i,int mode)
@@ -910,6 +912,8 @@ void justOverwriteResult(char **result,char *num1,char *num2,int mode)
 	mode <0 || mode >3 )
 		exit(250);
 	char *buff = bigNumCompute(num1,num2,false,mode,0,NULL);
+	//reportMemerySize(*result,"result");
+	//reportMemerySize(buff,"buff");
 	free((*result));
 	(*result)=buff;
 	return;
@@ -1140,6 +1144,8 @@ char *getPI(void)
 	buff = getDoubleFactorial(shu1);
 	free(shu1);
 	shu1 = buff;
+	reportMemerySize(shu1,"shu1");
+	system("pause");
 	justOverwriteResult(&shu1,shu1,shu1,3);
 	justOverwriteResult(&shu1,shu1,"2",3);
 
@@ -1209,6 +1215,7 @@ char *getFactorial(char num1[])
 	}
 	printf("完成长度百分比为%lf%%，",(i*1.000-i2+1)*100/i);
 	printf("累计耗时：%lf秒\n",(double)(clock()-startc)/CLOCKS_PER_SEC);
+	free(num2);
 	return buff;
 }
 char *getDoubleFactorial(char num1[])
@@ -1258,6 +1265,7 @@ char *getDoubleFactorial(char num1[])
 	}
 	printf("完成长度百分比为%lf%%，",(i*1.000-i2+1)*100/i);
 	printf("累计耗时：%lf秒\n",(double)(clock()-startc)/CLOCKS_PER_SEC);
+	free(num2);
 	return buff;
 }
 char *getSqrt(char num1[],long int precision)
@@ -1286,6 +1294,7 @@ char *getSqrt(char num1[],long int precision)
 		//if(is_DeBugMode)
 			printf("\n第%d次算术平方根临时答案为：%s\n\r",i++,result);
 		buff2 = bigNumCompute(buff,result,false,2,0,NULL);
+		free(buff);
 		getFabs(&buff2);
 		if(judgeSmallerNum(buff2,pre,-1,-1))
 			break;
@@ -1297,6 +1306,8 @@ char *getSqrt(char num1[],long int precision)
 		justOverwriteResult(&buff,buff,"0.5",3);
 	}
 	free(buff2);
+	if(precision > 0)
+		free(pre);
 	if(result[precision+2]>='5')
 	{
 		result[precision+2]='\0';
@@ -1308,10 +1319,9 @@ char *getSqrt(char num1[],long int precision)
 void getFabs(char **num)
 {
 	char *num2 = *num,*buff;
-	if(num2[0]=='-')
-		buff = justCopyStr(num2+1,0);
-	else
+	if(num2[0]!='-')
 		return;
+	buff = justCopyStr(num2+1,0);
 	free(*num);
 	(*num) = buff;
 	return;
@@ -1344,4 +1354,12 @@ void memeryIsNotEnough(void)
 	puts("Sorry!Yours mechine did not have enough memery!");
 	puts("Program terminated!");
 	exit(444);
+}
+void reportMemerySize(char *aim,char *say)
+{
+	if(say)
+		printf("\r%-50c\r%s_Size=%d\n",' ',say,_msize(aim));
+	else
+		printf("\r%-50c\rstrSize=%d\n",' ',_msize(aim));
+	return;
 }
