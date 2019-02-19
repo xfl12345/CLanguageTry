@@ -24,7 +24,7 @@ char mainMode = 'a'-1;
 
 const bool is_DeBugMode=false;
 int times=0;
-char *preOfPI="1000000000000";
+char *preOfPI="10000000";
 clock_t start,tmpNow,finish;
 
 /*mode=1:plus,mode=2:minus,mode=3:multiply,mode=4:divide;
@@ -1160,7 +1160,7 @@ char *getPI(void)
 	finish = clock();
 	FILE *fp=NULL;
 	fp=fopen("piOutput.txt","a");
-	fprintf(fp,"\n\npreOfPI=%ld\n\n被除数：%s\n\n被除数共计%d位\n\n除数：%s\n\n除数共计%d位\n\nResult:%s\n\n结果共计%d位\n\n耗时%lf秒\n\n",preOfPI,shu1,strlen(shu1),shu2,strlen(shu2),buff,strlen(buff),(double)(finish - start)/CLOCKS_PER_SEC);
+	fprintf(fp,"\n\npreOfPI=%s\n\n被除数：%s\n\n被除数共计%d位\n\n除数：%s\n\n除数共计%d位\n\nResult:%s\n\n结果共计%d位\n\n耗时%lf秒\n\n",preOfPI,shu1,strlen(shu1),shu2,strlen(shu2),buff,strlen(buff),(double)(finish - start)/CLOCKS_PER_SEC);
 	fclose(fp);
 	free(shu1);
 	free(shu2);
