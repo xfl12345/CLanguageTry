@@ -24,7 +24,7 @@ char mainMode = 'a'-1;
 
 const bool is_DeBugMode=false;
 int times=0;
-long int preOfPI=50000;
+char *preOfPI="1000000000000";
 clock_t start,tmpNow,finish;
 
 /*mode=1:plus,mode=2:minus,mode=3:multiply,mode=4:divide;
@@ -1133,19 +1133,15 @@ char *getPI(void)
 	char *shu1,*shu2;
 	char *buff,*buff2;
 	int i;
-	buff=covertInt2Char(preOfPI);
-	shu1 = bigNumCompute("2",buff,false,3,0,NULL);
-	shu2 = bigNumCompute("2",buff,false,3,0,NULL);
-	buff2 = bigNumCompute("2",buff,false,3,0,NULL);
-	free(buff);
+	shu1 = bigNumCompute("2",preOfPI,false,3,0,NULL);
+	shu2 = bigNumCompute("2",preOfPI,false,3,0,NULL);
+	buff2 = bigNumCompute("2",preOfPI,false,3,0,NULL);
 	justOverwriteResult(&shu2,shu2,"1",2);
 	justOverwriteResult(&buff2,buff2,"1",1);
 
 	buff = getDoubleFactorial(shu1);
 	free(shu1);
 	shu1 = buff;
-	reportMemerySize(shu1,"shu1");
-	system("pause");
 	justOverwriteResult(&shu1,shu1,shu1,3);
 	justOverwriteResult(&shu1,shu1,"2",3);
 
