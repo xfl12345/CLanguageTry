@@ -9,6 +9,7 @@ struct num
     long int start;
     long int end;
     long long int result;
+    bool is_finished;
 };
 typedef struct num   snum;
 void sumUp(snum *src);
@@ -40,7 +41,7 @@ int main(void)
         snum sss[5];
         long int part = i/4;
         long int yu = i%4;
-        int err;
+        int err,tmpInt;
         for(i2=0;i2<4;i2++)
         {
             snumInit(&sss[i2]);
@@ -51,6 +52,13 @@ int main(void)
             if(err = pthread_create(&thread_id[i2],&attr[i2],sumUp,&sss[i2])==0)
             {
                 printf("线程%d创建成功！\n",i2+1);
+                if(pthread_attr_getdetachstate(&thread_id[i2],&tmpInt) == 0)
+                {
+                    if(tmpInt == PTHREAD_CREATE_DETACHED)
+                        printf("线程状态：分离\n");
+                    else if(tmpInt == PTHREAD_CREATE_JOINABLE)
+                        printf("线程状态：普通\n");
+                }
             }
             else
             {
@@ -63,8 +71,6 @@ int main(void)
         	snumInit(&sss[i2]);
             sss[i2].start = part * 4 +1;
             sss[i2].end = i;
-            pthread_attr_init(&attr[i2]);
-            pthread_attr_setdetachstate(&attr[i2] , PTHREAD_CREATE_DETACHED);
             if(err = pthread_create(&thread_id[i2],NULL,sumUp,&sss[i2])==0)
             {
                 printf("线程%d创建成功！\n",i2+1);
@@ -84,7 +90,27 @@ int main(void)
             for(flag = false,i2=0 ; i2<4 ; i2++)
             {
                 printf("线程%d：",i2+1);
-                if(err = pthread_kill(thread_id,0) == ESRCH)
+                if(sss[i2].is_finished)
+                {
+                    printf("Done;");
+                }
+                else
+                {
+                    err = pthread_kill(thread_id[i2],0);
+                    if(err == 0 || err == ESRCH)
+                    {
+                        printf("Runing;");
+                        flag = true;
+                    }
+                    else
+                    {
+                        printf("线程出错！程序终止！");
+                        exit(err);
+                    }
+                }
+                /*
+                err = pthread_kill(thread_id[i2],0);
+                if(err == ESRCH)
                 {
                     printf("Done;");
                 }
@@ -98,6 +124,7 @@ int main(void)
                     printf("线程出错！程序终止！");
                     exit(err);
                 }
+                */
                 /*
                 if(kill_rc == ESRCH)
                     printf("the specified thread did not exists or already quit/n");
@@ -114,7 +141,8 @@ int main(void)
     printf("\nresult=%lld\n",result);
     printf("累计耗时：");
     calculateTime(start,clock());
-
+    getchar();
+    getch();
     return 0;
 }
 void sumUp(snum *src)
@@ -125,11 +153,14 @@ void sumUp(snum *src)
     {
         *res = *res + i;
     }
+    src->is_finished = true;
+    printf("\n%lld\n",*res);
     return;
 }
 void snumInit(snum *aim)
 {
     aim->end = aim ->start = aim->result = 0;
+    aim->is_finished = false;
     return;
 }
 void calculateTime(clock_t start,clock_t end)
