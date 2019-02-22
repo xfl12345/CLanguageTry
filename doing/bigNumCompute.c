@@ -4,6 +4,11 @@
 #include<string.h>
 #include<time.h>
 #include<pthread.h>
+#if defined(WIN32) || defined(WIN64)
+#include<windows.h>
+#elif defined(LINUX) || defined(SOLARIS) || defined(AIX)
+#include<unistd.h>
+#endif
 //#include<windows.h>
 struct num{
 	char *shuZi;
@@ -18,16 +23,35 @@ struct num{
 	bool moveOneStep;   /*仅移动一步，值为真时，下标应减一*/
 	//int validIntStart; /*非零数起始下标*/
 };
-typedef struct num    snum;
+struct factorialNum
+{
+	char *srcNum;
+	char *countDownNum;
+	char *lastNum;
+	char *result;
+	long int i,i2,i3;
+	float percent,lastPercent;
+	char mode;
+	char threadDIYid;
+	bool need_free;
+	bool is_thread;
+	bool is_finished;
+	bool is_killed;
+	//pthread_mutex_t
+};
+
+typedef struct num            snum;
+typedef struct factorialNum   fnum;
 
 /*jinZhi即进制，范围应在char的大小以内*/
 int jinZhi = 10;  /*此处定义为十进制*/
 char mainMode = 'a'-1;
+int CPU_core_num = 0;
 
 const bool is_DeBugMode=false;
 int times=0;
 char *preOfPI="5000";
-clock_t start,tmpNow,finish;
+
 
 /*mode=1:plus,mode=2:minus,mode=3:multiply,mode=4:divide;
 *模式1-4分别为加减乘除
@@ -43,7 +67,8 @@ void analyzeNum(snum *num,int limitSize);
 /*顾名思义，covertResult即将“结果”转换成目标字符串*/
 void covertResult(char *result,snum *aim,bool headspace);
 char *covertInt2Char(long int aim);
-int getChar2Int(char *src,int end);
+int convertChar2Int(char *src,int end);
+void plusOneUnit(char **num,bool headspace);
 void justCopyResult(char *result,char *num1,char *num2,int size,int mode);
 /*justOverwriteResult函数与justCopyResult函数不一样，
 *此函数会free掉result指针，然后传递“结果”指针*/
@@ -74,19 +99,24 @@ void memeryIsNotEnough(void);
 void creatingThreadFailed(void);
 void reportMemerySize(char *aim,char *say);
 void calculateTime(clock_t start,clock_t end);
-/*Have not finished yet...*/
+
+int get_CPU_core_num(void);
 char *getPI(void);
 char *getFactorial(char num1[]);
 char *getDoubleFactorial(char num1[]);
+char *factorialRunInThread(fnum *src);
+void factorialUnit(fnum *src);
+float getFactorialTopNumPercent(fnum *src);
 char *getSqrt(char num1[],long int precision);
 void getFabs(char **num);
-void plusOneUnit(char **num,bool headspace);
 
+/*Have not finished yet...*/
 int main(void)
 {
 	int i,precision=0;
 	char *shu1,*shu2,*result;
 	shu1=shu2=result=NULL;
+	printf("系统CPU核心个数：%d\n",CPU_core_num = get_CPU_core_num());
 	/*
 	if(SetProcessAffinityMask(GetCurrentProcess(),15))
 		printf("\n启动四核CPU并行处理成功！\n");
@@ -127,8 +157,8 @@ int main(void)
 	*/
 	
 	//result = getPI();
-	//result = getDoubleFactorial("10");
-	result = getSqrt("5",10000);
+	result = getFactorial("200");
+	//result = getSqrt("10",6000);
 	while(result[++i]!='\0');
 	printf("\n\nResult=%s\n",result);
 	printf("\nstrlen=%d\n",i);
@@ -157,6 +187,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,long int pre
 	int startPoint=-1;
 	char *result,*yu,*buff;
 	char oneCharStr[2]={'0','\0'},zeroCopy[2]={'0','\0'};
+	clock_t startc = clock();
 	i=i2=tmpInt=0;
 	flag1=flag2=false;
 	result = yu = buff = tmpCharPoint = shu1src = shu2src = NULL;
@@ -513,41 +544,43 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,long int pre
 				{	/**如果被除数位数比除数位数多（最多也就多一位）**/
 					result[i] = 9;
 					tmpInt = result[i] * (s2.shuZi[0] - '0');
-					while(tmpInt > getChar2Int(yu,2))
+					while(tmpInt > convertChar2Int(yu,2))
 					{
 						result[i]--;
 						tmpInt = result[i] * (s2.shuZi[0] - '0');
 					}
 				}
-				if(i>3)
+				if(is_DeBugMode)
 				{
-					if(result[i] >= 10 || result[i] < 0)
+					if(i>3)
 					{
-						printf("\n产生危险数值！\n");
-						printf("此时除数:%s\n",s2.shuZi);
-						printf("共计%d位\n",s2.length);
-						printf("此时余数:%s\n",yu);
-						printf("共计%d位\n",i2);
-						printf("算得初始商值为:%d\n",result[i]);
-						printf("上次商值为:%d\n",result[i-1]);
-						printf("上上次商值为:%d\n",result[i-2]);
-						getchar();
-						result[i]=1;
-					}
-					if(result[i]==0&&result[i-1]==0)
-					{
-						printf("\n貌似偏离预期！\n");
-						printf("此时除数:%s\n",s2.shuZi);
-						printf("共计%d位\n",s2.length);
-						printf("此时余数:%s\n",yu);
-						printf("共计%d位\n",i2);
-						printf("算得初始商值为:%d\n",result[i]);
-						printf("上次商值为:%d\n",result[i-1]);
-						printf("上上次商值为:%d\n",result[i-2]);
-						getchar();
+						if(result[i] >= 10 || result[i] < 0)
+						{
+							printf("\n产生危险数值！\n");
+							printf("此时除数:%s\n",s2.shuZi);
+							printf("共计%d位\n",s2.length);
+							printf("此时余数:%s\n",yu);
+							printf("共计%d位\n",i2);
+							printf("算得初始商值为:%d\n",result[i]);
+							printf("上次商值为:%d\n",result[i-1]);
+							printf("上上次商值为:%d\n",result[i-2]);
+							getchar();
+							result[i]=1;
+						}
+						if(result[i]==0&&result[i-1]==0)
+						{
+							printf("\n貌似偏离预期！\n");
+							printf("此时除数:%s\n",s2.shuZi);
+							printf("共计%d位\n",s2.length);
+							printf("此时余数:%s\n",yu);
+							printf("共计%d位\n",i2);
+							printf("算得初始商值为:%d\n",result[i]);
+							printf("上次商值为:%d\n",result[i-1]);
+							printf("上上次商值为:%d\n",result[i-2]);
+							getchar();
+						}
 					}
 				}
-				
 				oneCharStr[0] = result[i] + '0';
 				buff = justCopyStr(s2.shuZi,0);
 				justOverwriteResult(&buff,buff,oneCharStr,3);
@@ -584,17 +617,21 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,long int pre
 				}
 				if(buff[0]=='-' )
 				{
-					printf("\n答案错误！\n");
-					printf("此时除数:%s\n",s2.shuZi);
-					printf("共计%d位\n",s2.length);
-					printf("此时余数:%s\n",yu);
-					printf("共计%d位\n",i2);
-					printf("算得初始商值为:%d\n",result[i]);
-					if(i>1)
-						printf("上次商值为:%d\n",result[i-1]);
-					if(i>2)
-						printf("上上次商值为:%d\n",result[i-2]);
-					getchar();
+					if(is_DeBugMode)
+					{
+						printf("\n答案错误！\n");
+						printf("此时除数:%s\n",s2.shuZi);
+						printf("共计%d位\n",s2.length);
+						printf("此时余数:%s\n",yu);
+						printf("共计%d位\n",i2);
+						printf("算得初始商值为:%d\n",result[i]);
+						if(i>1)
+							printf("上次商值为:%d\n",result[i-1]);
+						if(i>2)
+							printf("上上次商值为:%d\n",result[i-2]);
+						getchar();
+					}
+					exit(251);
 				}
 				free(yu);
 				yu = justCopyStr(buff,s2.length);
@@ -604,7 +641,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,long int pre
 			}
 			if( is_DeBugMode && i % 100 == 0)
 			{
-				printf("目前算至第%d位",(i/100)*100-1);
+				printf("目前算至第%d位",i+1);
 				printf("此时除数:%s\n",s2.shuZi);
 				printf("共计%d位\n",s2.length);
 				printf("此时余数:%s\n",yu);
@@ -676,17 +713,17 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,long int pre
 						if(oneCharStr[0]=='b')
 							printf("减法，");
 						printf("已完成%lf%%，耗时",((tmpInt - s1.xb - s2.xb)*100.000)/tmpInt);
-						calculateTime(start,clock());
+						calculateTime(startc,clock());
 						break;
 					case 'c':
 						printf("乘法，");
 						printf("已完成%lf%%，耗时",((s2.length-1-s2.xb)*100.000)/s2.length);
-						calculateTime(start,clock());
+						calculateTime(startc,clock());
 						break;
 					case 'd':
 						printf("除法，");
 						printf("已完成%lf%%，耗时",(i*100.000)/minSize);
-						calculateTime(start,clock());
+						calculateTime(startc,clock());
 						break;
 					default:
 						break;
@@ -895,7 +932,7 @@ char *covertInt2Char(long int aim)
 		buff[0]='-';
 	return buff;
 }
-int getChar2Int(char *src,int end)
+int convertChar2Int(char *src,int end)
 {
 	int i,result=0;
 	for(i=0 ; i < end ;i++)
@@ -1148,6 +1185,7 @@ char *getPI(void)
 	char *shu1,*shu2;
 	char *buff,*buff2;
 	int i;
+	clock_t start,finish;
 	shu1 = bigNumCompute("2",preOfPI,false,3,0,NULL);
 	shu2 = bigNumCompute("2",preOfPI,false,3,0,NULL);
 	buff2 = bigNumCompute("2",preOfPI,false,3,0,NULL);
@@ -1183,95 +1221,341 @@ char *getPI(void)
 }
 char *getFactorial(char num1[])
 {
-	int i=0,i2=0,lastI2;
-	float percent,lastPercent=0;
+	int i=0;
+	fnum *src;
 	clock_t startc;
 	while(num1[++i]!='\0');
-	printf("\n数字：%s\n",num1);
 	if(i == 1 && (num1[0]=='0' || num1[0]=='1') )
 		return justCopyStr("1",0);
-	char *num2=justCopyStr(num1,0);
-	char *buff=justCopyStr(num1,0);
-	lastI2 = i2 = i;
-	startc = clock();
-	while(!judgeSmallerInt(num2,"2",i2,1))
+	char *buff;
+	if(i<=10000)
 	{
-		i2=0;
-		justOverwriteResult(&num2,num2,"1",2);
-		justOverwriteResult(&buff,buff,num2,3);
-		while(num2[++i2]!='\0');
-		percent = ('9'-num2[0])*12.5;
-		if(percent != lastPercent || i2 != lastI2)
+		src = (fnum *)malloc(sizeof(fnum)*(1 +1));
+		if(src == NULL)
+			memeryIsNotEnough();
+		src->srcNum = num1;
+		src->lastNum = "2";
+		src->mode = 1;
+		src->need_free = false;
+		src->is_thread = false;
+		factorialUnit(src);
+	}
+	else
+	{
+		int err,i2;
+		bool is_all_done;
+		pthread_t *thread_id = (pthread_t *)malloc(sizeof(pthread_t)*(CPU_core_num +1));
+		src = (fnum *)malloc(sizeof(fnum)*(CPU_core_num +1));
+		if(src == NULL || thread_id == NULL)
+			memeryIsNotEnough();
+		for(i=0 ; i < CPU_core_num ; i++)
 		{
-			printf("\r%60c\r当前运算模式：阶乘，当前长度为%d，",' ',i2);
-			printf("顶位完成度为%.1f%%，",percent);
-			if( i2!=1 || (i2==1 && num2[0]>='2'))
+			src[i].srcNum = justCopyStr(num1,0);
+			src[i].lastNum = justCopyStr("2",0);
+			src[i].mode = 1;
+			src[i].threadDIYid = i;
+			src[i].need_free = true;
+			src[i].is_thread = true;
+			src[i].is_finished = false;
+			src[i].is_killed = false;
+			if(err = pthread_create(thread_id+i,NULL,factorialUnit,src+i))
 			{
-				printf("完成长度百分比为%lf%%，",(i*1.000-i2)*100/i);
-				printf("累计耗时：");
-				calculateTime(startc,clock());
+				printf("线程%d创建成功！\n",i+1);
 			}
-			lastI2 = i2;
-			lastPercent = percent;
+			else
+			{
+				printf("线程%d创建失败！\n",i+1);
+                exit(err);
+			}
+		}
+		for(i=0 , is_all_done = true;  ; i++)
+		{
+			if(!src[i].is_killed)
+			{
+				is_all_done = false;
+				if(src[i].is_finished)
+				{
+					if( !(err = pthread_join(thread_id[i],NULL) == 0)  )
+						exit(err);
+					src[i].is_killed = true;
+				}
+			}
+			if(src[i].percent != src[i].lastPercent)
+			{
+				src[i].lastPercent = src[i].percent;
+				printf("\r90c\r各线程完成情况：",' ');
+				for(i2=0 ; i2 < CPU_core_num ; i2++)
+				{
+					printf("线程%d:",i2+1);
+					if(src[i2].is_finished)
+					{
+						printf("Done!;");
+					}
+					else
+					{
+						printf("%f;",src[i2].percent);
+						if(src[i2].percent != src[i2].lastPercent)
+							src[i2].lastPercent = src[i2].percent;
+					}
+				}
+			}
+			if(i == CPU_core_num - 1)
+			{
+				if(is_all_done)
+					break;
+				is_all_done = true;
+				i=-1;
+			}
 		}
 	}
-	printf("完成长度百分比为%lf%%，",(i*1.000-i2+1)*100/i);
-	printf("累计耗时：");
-	calculateTime(startc,clock());
-	printf("\n");
-	free(num2);
+	
+
+	buff = src->result;
 	return buff;
 }
 char *getDoubleFactorial(char num1[])
 {
-	int i=0,i2=0,lastI2;
-	char percent,lastPercent=0;
+	int i=0;
+	fnum *src;
 	clock_t startc;
 	while(num1[++i]!='\0');
-	printf("\n数字：%s\n",num1);
 	if(i == 1 && num1[0]=='0')
 		return justCopyStr("1",0);
 	char *num2=justCopyStr(num1,0);
-	char *buff=justCopyStr(num1,0);
-	lastI2 = i2 = i;
-	startc = clock();
-	while(!judgeSmallerInt(num2,"3",i2,1))
+	char *buff;
+	src = (fnum *)malloc(sizeof(fnum)*(1+1));
+	src->srcNum = num2;
+	src->lastNum = justCopyStr("3",0);
+	src->mode = 2;
+	src->need_free = true;
+	src->is_thread = false;
+	factorialUnit(src);
+
+	buff = src->result;
+	return buff;
+}
+char *factorialRunInThread(fnum *src)
+{
+	int i,i2,err;
+	bool is_all_done;
+	char *buff,*buff2;
+	pthread_t *thread_id = (pthread_t *)malloc(sizeof(pthread_t)*(CPU_core_num +2));
+	fnum *part = (fnum *)malloc(sizeof(fnum)*(CPU_core_num +2));
+	if(part == NULL || thread_id == NULL)
+		memeryIsNotEnough();
+	buff2 = covertInt2Char(CPU_core_num);
+	buff = bigNumCompute(src->srcNum,buff2,false,4,0,NULL);
+	free(buff2);
+	if(buff[0]=='0')
 	{
-		i2=0;
-		justOverwriteResult(&num2,num2,"2",2);
-		justOverwriteResult(&buff,buff,num2,3);
-		while(num2[++i2]!='\0');
-		if(num1[i-1]%2 == 0)
+		printf("\nYours computer is seem very powerful!\n");
+		printf("The program need to be rectifid in order to adapt your computer!\n");
+		printf("Program terminated!\n");
+		exit(666);
+	}
+	for(i=strlen(buff) -1 , i2=0 ; i>1 ; i--,i2++)
+	{
+		if(buff[i]=='.')
 		{
-			if(i2 == 1)
-				percent = (5-(num2[0]-'0')/2 )*25;
-			else
-				percent = (10-(num2[0]-'0') )*10;
+			buff[i]='\0';
+			break;
+		}
+	}
+	if(src->mode == 1)
+	{
+		
+	}
+	for(i=0 ; i < CPU_core_num ; i++)
+	{
+		part[i].srcNum = justCopyStr(src->srcNum,0);
+		part[i].lastNum = justCopyStr("2",0);
+		part[i].mode = 1;
+		part[i].threadDIYid = i;
+		part[i].need_free = true;
+		part[i].is_thread = true;
+		part[i].is_finished = false;
+		part[i].is_killed = false;
+		if(err = pthread_create(thread_id+i,NULL,factorialUnit,part+i))
+		{
+			printf("线程%d创建成功！\n",i+1);
 		}
 		else
 		{
-			percent = (10-(num2[0]-'0'-1) )*10;
-		}
-		if(percent != lastPercent || i2 != lastI2)
-		{
-			printf("\r%60c\r当前运算模式：双阶乘，当前长度为%d，",' ',i2);
-			printf("顶位完成度为%d%%，",percent);
-			if( i2!=1 || (i2==1 && num2[0]>='3'))
-			{
-				printf("完成长度百分比为%lf%%，",(i*1.000-i2)*100/i);
-				printf("累计耗时：");
-				calculateTime(startc,clock());
-			}
-			lastI2 = i2;
-			lastPercent = percent;
+			printf("线程%d创建失败！\n",i+1);
+			exit(err);
 		}
 	}
-	printf("完成长度百分比为%lf%%，",(i*1.000-i2+1)*100/i);
-	printf("累计耗时：");
-	calculateTime(startc,clock());
-	printf("\n");
-	free(num2);
+	for(i=0 , is_all_done = true;  ; i++)
+	{
+		if(!part[i].is_killed)
+		{
+			is_all_done = false;
+			if(part[i].is_finished)
+			{
+				if( !(err = pthread_join(thread_id[i],NULL) == 0)  )
+					exit(err);
+				part[i].is_killed = true;
+				justOverwriteResult(&buff,buff,part[i].result,1);
+			}
+		}
+		if(part[i].percent != part[i].lastPercent)
+		{
+			part[i].lastPercent = part[i].percent;
+			printf("\r90c\r各线程完成情况：",' ');
+			for(i2=0 ; i2 < CPU_core_num ; i2++)
+			{
+				printf("线程%d:",i2+1);
+				if(part[i2].is_finished)
+				{
+					printf("Done!;");
+				}
+				else
+				{
+					printf("%f;",part[i2].percent);
+					if(part[i2].percent != part[i2].lastPercent)
+						part[i2].lastPercent = part[i2].percent;
+				}
+			}
+		}
+		if(i == CPU_core_num - 1)
+		{
+			if(is_all_done)
+				break;
+			is_all_done = true;
+			i=-1;
+		}
+	}
 	return buff;
+}
+void factorialUnit(fnum *src)
+{
+	long int lastI2;
+	char *num1 = src->srcNum;
+	char *endNum = src->lastNum;
+	clock_t startc;
+	src->i = src->i2 = src->i3 = 0;
+	while(num1[++(src->i)]!='\0');
+	if(src->i == 1)
+	{
+		if(num1[0]=='0' || num1[0]=='1')
+		{
+			src->result = justCopyStr("1",0);
+			return;
+		}
+		
+	}
+	else if(src->i == 2)
+	{
+		if(num1[0]=='-' && \
+		num1[1]=='1' && src->mode == 2)
+		{
+			src->result = justCopyStr("0",0);
+			return;
+		}
+	}
+	if(num1[0]=='-')
+		exit(1323);
+	while(endNum[++(src->i3)]!='\0');
+	lastI2 = src->i2 = src->i;
+	src->percent = 0;
+	src->lastPercent = -1;
+	char *num2=justCopyStr(num1,0);
+	char *buff=justCopyStr(num1,0);
+	startc = clock();
+	if(src->is_thread)
+	{
+		while(!judgeSmallerInt(num2,endNum,src->i2,1))
+		{
+			src->i2=0;
+			if(src->mode == 1)
+				justOverwriteResult(&num2,num2,"1",2);
+			else
+				justOverwriteResult(&num2,num2,"2",2);
+			justOverwriteResult(&buff,buff,num2,3);
+			while(num2[++(src->i2)]!='\0');
+			if(src->i2 != lastI2)
+			{
+				src->percent = (src->i * 1.000 - src->i2)*100/(src->i);
+				lastI2 = src->i2;
+			}
+		}
+		if(src->mode == 2)
+			printf("双");
+		printf("阶乘，");
+		printf("子线程%d：累计耗时：",src->threadDIYid);
+		calculateTime(startc,clock());
+	}
+	else
+	{
+		printf("\n数字：%s\n",num1);
+		while(!judgeSmallerInt(num2,endNum,src->i2,1))
+		{
+			src->i2=0;
+			if(src->mode == 1)
+				justOverwriteResult(&num2,num2,"1",2);
+			else
+				justOverwriteResult(&num2,num2,"2",2);
+			justOverwriteResult(&buff,buff,num2,3);
+			src->countDownNum = num2;
+			while(num2[++(src->i2)]!='\0');
+			if(src->i2 != lastI2 || src->percent != src->lastPercent)
+			{
+				src->percent = getFactorialTopNumPercent(src);
+				printf("\r%60c\r当前运算模式：",' ');
+				if(src->mode == 2)
+					printf("双");
+				printf("阶乘，");
+				printf("当前长度为%d，顶位完成度为%.1f%%，",src->i2,src->percent);
+				if( src->i2!=1 || (src->i2==1 && \
+				(!judgeSmallerInt(num2,endNum,1,1))  )   )
+				{
+					printf("完成长度百分比为%lf%%，",(src->i * 1.000 - src->i2)*100/(src->i));
+					printf("累计耗时：");
+					calculateTime(startc,clock());
+				}
+				lastI2 = src->i2;
+				src->lastPercent = src->percent;
+			}
+		}
+		printf("完成长度百分比为%lf%%，",(src->i * 1.000 - src->i2 +1) * 100/(src->i) );
+		printf("累计耗时：");
+		calculateTime(startc,clock());
+		printf("\n");
+	}
+	free(num2);
+	if(src->need_free)
+	{
+		free(src->srcNum);
+		free(src->lastNum);
+		src->srcNum = src->lastNum = NULL;
+	}
+	src->result = buff;
+	if(src->is_thread)
+		src->is_finished = true;
+	return;
+}
+float getFactorialTopNumPercent(fnum *src)
+{
+	float percent;
+	if(src->mode == 1)
+	{
+		percent = ('9' - src->countDownNum[0])*12.5;
+	}
+	else
+	{	/*DoubleFactorial*/
+		if(src->srcNum[src->i -1]%2 == 0)
+		{
+			if(src->i2 == 1)
+				percent = (5-( src->countDownNum[0] -'0')/2 )*25;
+			else
+				percent = (10-(src->countDownNum[0] -'0') )*10;
+		}
+		else
+		{
+			percent = (10-(src->countDownNum[0] -'0'-1) )*10;
+		}
+	}
+	return percent;
 }
 char *getSqrt(char num1[],long int precision)
 {
@@ -1369,12 +1653,16 @@ void creatingThreadFailed(void)
 }
 void reportMemerySize(char *aim,char *say)
 {
-	/*
+	long int size=0;
+	#if defined(WIN32) || defined(WIN64)
+		size = _msize(aim);
+	#elif defined(LINUX) || defined(SOLARIS) || defined(AIX)
+		size = malloc_usable_size(aim);
+	#endif
 	if(say)
-		printf("\r%-50c\r%s_Size=%d\n",' ',say,_msize(aim));
+		printf("\r%-50c\r%s_Size=%d\n",' ',say,size);
 	else
-		printf("\r%-50c\rstrSize=%d\n",' ',_msize(aim));
-	*/
+		printf("\r%-50c\rstrSize=%d\n",' ',size);
 	return;
 }
 void calculateTime(clock_t start,clock_t end)
@@ -1408,4 +1696,18 @@ void calculateTime(clock_t start,clock_t end)
 	}
 	printf("%-10c",' ');
 	return;
+}
+int get_CPU_core_num(void)
+{
+	int i = 0;
+	#if defined(WIN32) || defined(WIN64)
+		SYSTEM_INFO info;
+		GetSystemInfo(&info);
+		i = info.dwNumberOfProcessors;
+	#elif defined(LINUX) || defined(SOLARIS) || defined(AIX)
+		i = get_nprocs();   //GNU fuction
+	#endif
+	if(i == 0)
+		exit(2000);
+	return i;
 }
