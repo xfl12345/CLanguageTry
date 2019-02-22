@@ -3,6 +3,8 @@
 #include<stdbool.h>
 #include<string.h>
 #include<time.h>
+#include<pthread.h>
+//#include<windows.h>
 struct num{
 	char *shuZi;
 	int xsd;    /*xsd即小数点，记录小数点的下标 (radix point)*/
@@ -24,7 +26,7 @@ char mainMode = 'a'-1;
 
 const bool is_DeBugMode=false;
 int times=0;
-long int preOfPI=50000;
+char *preOfPI="5000";
 clock_t start,tmpNow,finish;
 
 /*mode=1:plus,mode=2:minus,mode=3:multiply,mode=4:divide;
@@ -69,7 +71,9 @@ bool judgeSmallerXS(char num1[],char num2[],int s1end,int s2end);
 bool strcmp2(char str1[],char str2[],int end);
 void testSystem(char *a,char *b);
 void memeryIsNotEnough(void);
+void creatingThreadFailed(void);
 void reportMemerySize(char *aim,char *say);
+void calculateTime(clock_t start,clock_t end);
 /*Have not finished yet...*/
 char *getPI(void);
 char *getFactorial(char num1[]);
@@ -83,6 +87,12 @@ int main(void)
 	int i,precision=0;
 	char *shu1,*shu2,*result;
 	shu1=shu2=result=NULL;
+	/*
+	if(SetProcessAffinityMask(GetCurrentProcess(),15))
+		printf("\n启动四核CPU并行处理成功！\n");
+	else
+		printf("\n启动四核CPU并行处理失败！\n");
+	*/
 	/*puts(result=getZeroStr(6));
 	printf("strSize=%d\n",_msize(result));
 	shu1 = (char *)malloc(sizeof(char)*(10+1));
@@ -114,9 +124,11 @@ int main(void)
 	printf("\n\n");
 	start = clock();
 	result=bigNumCompute(shu1,shu2,false,i,precision,NULL);
+	
+	
 	//result = getPI();
 	//result = getDoubleFactorial("10");
-	//result = getSqrt("4",4000);
+	//result = getSqrt("5",10000);
 	while(result[++i]!='\0');
 	printf("\n\nResult=%s\n",result);
 	printf("\nstrlen=%d\n",i);
@@ -663,15 +675,18 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,long int pre
 					case 'b':
 						if(oneCharStr[0]=='b')
 							printf("减法，");
-						printf("已完成%lf%%，耗时%lf秒",((tmpInt - s1.xb - s2.xb)*100.000)/tmpInt,(double)(clock()-start)/CLOCKS_PER_SEC);
+						printf("已完成%lf%%，耗时",((tmpInt - s1.xb - s2.xb)*100.000)/tmpInt);
+						calculateTime(start,clock());
 						break;
 					case 'c':
 						printf("乘法，");
-						printf("已完成%lf%%，耗时%lf秒",((s2.length-1-s2.xb)*100.000)/s2.length,(double)(clock()-start)/CLOCKS_PER_SEC);
+						printf("已完成%lf%%，耗时",((s2.length-1-s2.xb)*100.000)/s2.length);
+						calculateTime(start,clock());
 						break;
 					case 'd':
 						printf("除法，");
-						printf("已完成%lf%%，耗时%lf秒",(i*100.000)/minSize,(double)(clock()-start)/CLOCKS_PER_SEC);
+						printf("已完成%lf%%，耗时",(i*100.000)/minSize);
+						calculateTime(start,clock());
 						break;
 					default:
 						break;
@@ -1133,19 +1148,15 @@ char *getPI(void)
 	char *shu1,*shu2;
 	char *buff,*buff2;
 	int i;
-	buff=covertInt2Char(preOfPI);
-	shu1 = bigNumCompute("2",buff,false,3,0,NULL);
-	shu2 = bigNumCompute("2",buff,false,3,0,NULL);
-	buff2 = bigNumCompute("2",buff,false,3,0,NULL);
-	free(buff);
+	shu1 = bigNumCompute("2",preOfPI,false,3,0,NULL);
+	shu2 = bigNumCompute("2",preOfPI,false,3,0,NULL);
+	buff2 = bigNumCompute("2",preOfPI,false,3,0,NULL);
 	justOverwriteResult(&shu2,shu2,"1",2);
 	justOverwriteResult(&buff2,buff2,"1",1);
 
 	buff = getDoubleFactorial(shu1);
 	free(shu1);
 	shu1 = buff;
-	reportMemerySize(shu1,"shu1");
-	system("pause");
 	justOverwriteResult(&shu1,shu1,shu1,3);
 	justOverwriteResult(&shu1,shu1,"2",3);
 
@@ -1164,7 +1175,7 @@ char *getPI(void)
 	finish = clock();
 	FILE *fp=NULL;
 	fp=fopen("piOutput.txt","a");
-	fprintf(fp,"\n\npreOfPI=%ld\n\n被除数：%s\n\n被除数共计%d位\n\n除数：%s\n\n除数共计%d位\n\nResult:%s\n\n结果共计%d位\n\n耗时%lf秒\n\n",preOfPI,shu1,strlen(shu1),shu2,strlen(shu2),buff,strlen(buff),(double)(finish - start)/CLOCKS_PER_SEC);
+	fprintf(fp,"\n\npreOfPI=%s\n\n被除数：%s\n\n被除数共计%d位\n\n除数：%s\n\n除数共计%d位\n\nResult:%s\n\n结果共计%d位\n\n耗时%lf秒\n\n",preOfPI,shu1,strlen(shu1),shu2,strlen(shu2),buff,strlen(buff),(double)(finish - start)/CLOCKS_PER_SEC);
 	fclose(fp);
 	free(shu1);
 	free(shu2);
@@ -1172,25 +1183,15 @@ char *getPI(void)
 }
 char *getFactorial(char num1[])
 {
-	int i=0,i2=1,lastI2;
+	int i=0,i2=0,lastI2;
 	float percent,lastPercent=0;
 	clock_t startc;
 	while(num1[++i]!='\0');
 	printf("\n数字：%s\n",num1);
-	char *num2=(char *)malloc(sizeof(char)*3);
-	char *buff;
-	if(num2 == NULL)
-		memeryIsNotEnough();
-	num2[0] = '1';
-	num2[1] = '\0';
-	if(i == 1)
-	{
-		if(num1[0]=='0' || num1[0]=='1')
-			return num2;
-	}
-	free(num2);
-	num2=justCopyStr(num1,0);
-	buff=justCopyStr(num1,0);
+	if(i == 1 && (num1[0]=='0' || num1[0]=='1') )
+		return justCopyStr("1",0);
+	char *num2=justCopyStr(num1,0);
+	char *buff=justCopyStr(num1,0);
 	lastI2 = i2 = i;
 	startc = clock();
 	while(!judgeSmallerInt(num2,"2",i2,1))
@@ -1202,19 +1203,22 @@ char *getFactorial(char num1[])
 		percent = ('9'-num2[0])*12.5;
 		if(percent != lastPercent || i2 != lastI2)
 		{
-			printf("\r%50c\r当前运算模式：阶乘，当前长度为%d，",' ',i2);
+			printf("\r%60c\r当前运算模式：阶乘，当前长度为%d，",' ',i2);
 			printf("顶位完成度为%.1f%%，",percent);
 			if( i2!=1 || (i2==1 && num2[0]>='2'))
 			{
 				printf("完成长度百分比为%lf%%，",(i*1.000-i2)*100/i);
-				printf("累计耗时：%lf秒",(double)(clock()-startc)/CLOCKS_PER_SEC);
+				printf("累计耗时：");
+				calculateTime(startc,clock());
 			}
 			lastI2 = i2;
 			lastPercent = percent;
 		}
 	}
 	printf("完成长度百分比为%lf%%，",(i*1.000-i2+1)*100/i);
-	printf("累计耗时：%lf秒\n",(double)(clock()-startc)/CLOCKS_PER_SEC);
+	printf("累计耗时：");
+	calculateTime(startc,clock());
+	printf("\n");
 	free(num2);
 	return buff;
 }
@@ -1225,13 +1229,10 @@ char *getDoubleFactorial(char num1[])
 	clock_t startc;
 	while(num1[++i]!='\0');
 	printf("\n数字：%s\n",num1);
-	char *num2=justCopyStr("1",0);
-	char *buff;
 	if(i == 1 && num1[0]=='0')
-		return num2;
-	free(num2);
-	num2=justCopyStr(num1,0);
-	buff=justCopyStr(num1,0);
+		return justCopyStr("1",0);
+	char *num2=justCopyStr(num1,0);
+	char *buff=justCopyStr(num1,0);
 	lastI2 = i2 = i;
 	startc = clock();
 	while(!judgeSmallerInt(num2,"3",i2,1))
@@ -1242,9 +1243,10 @@ char *getDoubleFactorial(char num1[])
 		while(num2[++i2]!='\0');
 		if(num1[i-1]%2 == 0)
 		{
-			percent = (10-(num2[0]-'0') )*10;
 			if(i2 == 1)
 				percent = (5-(num2[0]-'0')/2 )*25;
+			else
+				percent = (10-(num2[0]-'0') )*10;
 		}
 		else
 		{
@@ -1252,19 +1254,22 @@ char *getDoubleFactorial(char num1[])
 		}
 		if(percent != lastPercent || i2 != lastI2)
 		{
-			printf("\r%50c\r当前运算模式：双阶乘，当前长度为%d，",' ',i2);
+			printf("\r%60c\r当前运算模式：双阶乘，当前长度为%d，",' ',i2);
 			printf("顶位完成度为%d%%，",percent);
 			if( i2!=1 || (i2==1 && num2[0]>='3'))
 			{
 				printf("完成长度百分比为%lf%%，",(i*1.000-i2)*100/i);
-				printf("累计耗时：%lf秒",(double)(clock()-startc)/CLOCKS_PER_SEC);
+				printf("累计耗时：");
+				calculateTime(startc,clock());
 			}
 			lastI2 = i2;
 			lastPercent = percent;
 		}
 	}
 	printf("完成长度百分比为%lf%%，",(i*1.000-i2+1)*100/i);
-	printf("累计耗时：%lf秒\n",(double)(clock()-startc)/CLOCKS_PER_SEC);
+	printf("累计耗时：");
+	calculateTime(startc,clock());
+	printf("\n");
 	free(num2);
 	return buff;
 }
@@ -1294,7 +1299,6 @@ char *getSqrt(char num1[],long int precision)
 		//if(is_DeBugMode)
 			printf("\n第%d次算术平方根临时答案为：%s\n\r",i++,result);
 		buff2 = bigNumCompute(buff,result,false,2,0,NULL);
-		free(buff);
 		getFabs(&buff2);
 		if(judgeSmallerNum(buff2,pre,-1,-1))
 			break;
@@ -1355,11 +1359,53 @@ void memeryIsNotEnough(void)
 	puts("Program terminated!");
 	exit(444);
 }
+void creatingThreadFailed(void)
+{
+	puts("Sorry!Program creating thread failed!");
+	puts("Please check out the system permission!");
+	puts("Or yours mechine did not have enough memery!");
+	puts("Program terminated!");
+	exit(555);
+}
 void reportMemerySize(char *aim,char *say)
 {
+	/*
 	if(say)
 		printf("\r%-50c\r%s_Size=%d\n",' ',say,_msize(aim));
 	else
 		printf("\r%-50c\rstrSize=%d\n",' ',_msize(aim));
+	*/
+	return;
+}
+void calculateTime(clock_t start,clock_t end)
+{
+	long int msSrc = end - start; /*ms Src Int*/
+	double src=msSrc*0.001 ,sec;   /*sec Src double*/
+	long int intTmp = src ;/*sec Src Int*/
+	short min,hour,day;
+	sec = (double)(intTmp % 60) + (src - intTmp); /*sec double*/
+	if(src < 60)
+	{
+		printf("%lf秒",sec);
+	}
+	else if(src < 3600)
+	{
+		min = intTmp / 60;
+		printf("%d分钟%lf秒",min,sec);
+	}
+	else if(src < 86400)
+	{
+		hour = intTmp / 3600;
+		min = (intTmp % 3600)/60;
+		printf("%d小时%d分钟%lf秒",hour,min,sec);
+	}
+	else
+	{
+		day = intTmp / 86400;
+		hour = (intTmp % 86400)/3600;
+		min = (intTmp % 3600)/60;
+		printf("%d天%d小时%d分钟%lf秒",day,hour,min,sec);
+	}
+	printf("%-10c",' ');
 	return;
 }
