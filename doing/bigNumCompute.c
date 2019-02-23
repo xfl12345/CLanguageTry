@@ -52,7 +52,7 @@ clock_t start,tmpClock;
 const bool is_DeBugMode=false;
 int times=0;
 char *preOfPI="5000";
-
+char *threadMinRequest="100000";
 
 /*mode=1:plus,mode=2:minus,mode=3:multiply,mode=4:divide;
 *模式1-4分别为加减乘除
@@ -158,7 +158,7 @@ int main(void)
 	*/
 	start = clock();
 	//result = getPI();
-	result = getFactorial("39999");
+	result = getFactorial("400001");
 	//result = getSqrt("10",6000);
 	while(result[++i]!='\0');
 	printf("\n\nResult=%s\n",result);
@@ -1244,7 +1244,7 @@ char *getFactorial(char num1[])
 	src->need_free = false;
 	src->is_thread = false;
 	buff = covertInt2Char(CPU_core_num);
-	justOverwriteResult(&buff,buff,"10000",3);
+	justOverwriteResult(&buff,buff,threadMinRequest,3);
 	if( judgeSmallerInt(buff,num1,strlen(buff)-1,strlen(num1)-1) )
 		factorialRunInThread(src);
 	else
@@ -1386,6 +1386,7 @@ void factorialRunInThread(fnum *src)
 				if(  pthread_kill(thread_id[i],0) == ESRCH  )
 					part[i].is_killed = true;
 				justOverwriteResult(&buff,buff,part[i].result,3);
+				free(part[i].result);
 			}
 		}
 		if(part[i].percent != part[i].lastPercent)
