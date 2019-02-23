@@ -158,7 +158,7 @@ int main(void)
 	*/
 	start = clock();
 	//result = getPI();
-	result = getFactorial("40001");
+	result = getFactorial("39999");
 	//result = getSqrt("10",6000);
 	while(result[++i]!='\0');
 	printf("\n\nResult=%s\n",result);
@@ -1385,7 +1385,7 @@ void factorialRunInThread(fnum *src)
 			{
 				if(  pthread_kill(thread_id[i],0) == ESRCH  )
 					part[i].is_killed = true;
-				justOverwriteResult(&buff,buff,part[i].result,1);
+				justOverwriteResult(&buff,buff,part[i].result,3);
 			}
 		}
 		if(part[i].percent != part[i].lastPercent)
@@ -1423,6 +1423,7 @@ void factorialRunInThread(fnum *src)
 void factorialUnit(fnum *src)
 {
 	long int lastI2;
+	//long int i3=0;
 	char *num1 = src->srcNum;
 	char *endNum = src->lastNum;
 	clock_t startc;
@@ -1471,6 +1472,10 @@ void factorialUnit(fnum *src)
 				src->percent = (src->i * 1.000 - src->i2)*100/(src->i);
 				lastI2 = src->i2;
 			}
+			/*
+			if(src->threadDIYid == 3)
+				printf("线程4已循环%d次\n",++i3);
+			*/
 		}
 		printf("\n");
 		if(src->mode == 2)
