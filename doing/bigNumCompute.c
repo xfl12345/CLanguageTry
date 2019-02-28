@@ -49,7 +49,7 @@ char mainMode = 'a'-1;
 int CPU_core_num = 0;
 clock_t start,tmpClock;
 
-const bool is_DeBugMode=true;
+const bool is_DeBugMode=false;
 int times=0;
 char *preOfPI="5000";
 char *threadMinRequest="2";
@@ -127,12 +127,12 @@ int main(void)
 		printf("\n启动四核CPU并行处理失败！\n");
 	*/
 	/*puts(result=getZeroStr(6));
-	printf("strSize=%d\n",_msize(result));*/
+	printf("strSize=%d\n",_msize(result));
 	shu1 = justGetStrMem(10);
 	shu2 = justGetStrMem(10);
 	testSystem(shu1,shu2);
-	i=3;precision=0;mainMode='a'-1+i;
-	/*
+	i=3;precision=0;mainMode='a'-1+i;*/
+	/**/
 	printf("Please define the length of Num:");
 	i = limitInputNum(1,2100000000);
 	shu1 = justGetStrMem(i);
@@ -155,7 +155,7 @@ int main(void)
 	if(i<0 || i>4)
 		exit(250);
 	printf("\n\n");
-	start = clock();*/
+	start = clock();
 	result=bigNumCompute(shu1,shu2,false,i,precision,NULL);
 	
 	//start = clock();
@@ -832,6 +832,10 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,long int pre
 				minSize = startPoint;
 				startPoint = -1;
 			}
+			else
+			{
+				minSize = tmpInt;
+			}
 			i=0;
 		}
 	}
@@ -1385,14 +1389,6 @@ void factorialRunInThread(fnum *src)
 			buff = bigNumCompute(src->srcNum,"1",false,1,0,NULL);
 		justOverwriteResult(&buff,buff,"2",4);
 		justOverwriteResult(&buff,buff,buff3,4);
-	}
-	for(i=myStrlen(buff) -1 , i2=0 ; i>1 ; i--,i2++)
-	{
-		if(buff[i]=='.')
-		{
-			buff[i]='\0';
-			break;
-		}
 	}
 	free(buff2);
 	free(buff3);
