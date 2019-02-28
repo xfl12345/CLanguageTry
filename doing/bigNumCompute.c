@@ -75,6 +75,7 @@ void justCopyResult(char *result,char *num1,char *num2,int size,int mode);
 *此函数会free掉result指针，然后传递“结果”指针*/
 void justOverwriteResult(char **result,char *num1,char *num2,int mode);
 char *justCopyStr(char *src,int moreSpace);
+char *justGetStrMem(size_t size);
 int serialZeroCount(char *shuZi,int s1end);
 /*除去字符型数组中的无效字符*/
 void jumpUselessChar(char **ShuZi);
@@ -94,7 +95,7 @@ int limitInputNum(int min,int max);
 bool judgeSmallerNum(char num1[],char num2[],int s1end,int s2end);
 bool judgeSmallerInt(char num1[],char num2[],int s1end,int s2end);
 bool judgeSmallerXS(char num1[],char num2[],int s1end,int s2end);
-bool strcmp2(char str1[],char str2[],int end);
+bool myStrcmp(char str1[],char str2[],int end);
 void testSystem(char *a,char *b);
 void memeryIsNotEnough(void);
 void creatingThreadFailed(void);
@@ -127,15 +128,15 @@ int main(void)
 	*/
 	/*puts(result=getZeroStr(6));
 	printf("strSize=%d\n",_msize(result));*/
-	shu1 = (char *)malloc(sizeof(char)*(10+1));
-	shu2 = (char *)malloc(sizeof(char)*(10+1));
+	shu1 = justGetStrMem(10);
+	shu2 = justGetStrMem(10);
 	testSystem(shu1,shu2);
-	i=3;precision=200;mainMode='a'-1+i;
+	i=3;precision=0;mainMode='a'-1+i;
 	/*
 	printf("Please define the length of Num:");
 	i = limitInputNum(1,2100000000);
-	shu1 = (char *)malloc(sizeof(char)*(i+1));
-	shu2 = (char *)malloc(sizeof(char)*(i+1));
+	shu1 = justGetStrMem(i);
+	shu2 = justGetStrMem(i);
 	if(shu1 == NULL || shu2 == NULL)
 		exit(444);
 	printf("Please input Num1:");
@@ -391,10 +392,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,long int pre
 				/**检查除数是否为零**/
 				if(s2.intIsZero && s2.xsIsZero)
 				{
-					tmpCharPoint = (char *)malloc(sizeof(char)*8);
-					if(tmpCharPoint == NULL)
-						memeryIsNotEnough();
-					strcpy(tmpCharPoint,"error!");/**那就直接报错，不用算了**/
+					tmpCharPoint = justCopyStr("error!",0);/**那就直接报错，不用算了**/
 					free(shu1src);
 					return tmpCharPoint;
 				}
@@ -407,10 +405,10 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,long int pre
 		getMaxInt(s1.fractionLength, s2.fractionLength) + \
 		  2 ;/*预留2位空间做进位处理*/
 	if(mode == 3)
-		minSize = s1.intLength + s2.intLength +2;
+		minSize = s1.length + s2.length +2;
 	if(precision > 0)
 		minSize = minSize + precision;
-	result=(char *)malloc(sizeof(char)*(minSize +5));
+	result = justGetStrMem(minSize +4);
 	if(result == NULL)
 		memeryIsNotEnough();
 	memset(result,0,minSize+3);
@@ -420,10 +418,8 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,long int pre
 	{
 		if(s1.xsd == -1 )
 			minSize--;
-		yu = (char *)malloc(sizeof(char)*(s2.length +8));
-		buff = (char *)malloc(sizeof(char)*(s2.length +8));
-		if(yu == NULL || buff == NULL)
-			memeryIsNotEnough();
+		yu = justGetStrMem(s2.length +8);
+		buff = justGetStrMem(s2.length +8);
 		memset(yu,0,s2.length +4);
 		memset(buff,0,s2.length +4);
 		i2=0;
@@ -442,7 +438,11 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,long int pre
 		if(mode == 3)
 		{
 			if(s2.xb < 0)
+			{
+				if(result[i-1]!=0)
+					i--;
 				break;
+			}
 			if(s2.xb == s2.length -1)
 				for( ; s2.shuZi[s2.xb]=='0' ;s2.xb--);
 			i = minSize -1 - (s2.length -1 - s2.xb);
@@ -450,7 +450,7 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,long int pre
 			{
 				s2.xb--;
 				startPoint = 1;
-				for( ; s2.shuZi[s2.xb]=='0' ;s2.xb--);
+				for( ; s2.shuZi[s2.xb]=='0' && s2.xb > 0 ;s2.xb--);
 			}
 			if(startPoint == 1)
 				i = minSize -1 - (s2.length -1 - s2.xb -1);
@@ -804,12 +804,35 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,long int pre
 				tmpInt = tmpInt + s2.length -1 - s2.xsd;
 			startPoint = minSize - tmpInt;
 		}
-		if(precision > 0)
+		if(i<0)
+			i=0;
+		while(result[i]==0 && i+1 != startPoint && i < minSize -1 )
+			i++;/***除去整数部分的高位零***/
+		if(precision >= 0)
 		{
+			tmpInt = minSize - i;
+			tmpCharPoint = justGetStrMem(tmpInt+precision+1);
+			memset(tmpCharPoint,0,tmpInt+precision+1);
+			for(i2=0 ; i2<tmpInt ; i2++,i++)
+				tmpCharPoint[i2] = result[i];
+			free(result);
+			result = tmpCharPoint;
 			if(startPoint != -1)
+				startPoint = tmpInt - (minSize - startPoint);
+			if(precision > 0)
 			{
-				
+				if(startPoint == -1)
+					startPoint = tmpInt;
+				minSize = startPoint + precision;
+				if(result[minSize] >= 5)
+					need_roundUp = true;
 			}
+			else if(startPoint != -1)
+			{
+				minSize = startPoint;
+				startPoint = -1;
+			}
+			i=0;
 		}
 	}
 	else if(mode == 4)
@@ -817,6 +840,17 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,long int pre
 		i=0;
 		free(shu1src);
 		free(shu2src);
+		if(remainder != NULL)
+			(*remainder) = yu;
+		else
+			free(yu);
+	}
+	if(is_DeBugMode)
+	{
+		printf("结果二次初始数据result:");
+		for(i2=0;i2<minSize;i2++)
+			printf("%c",result[i2]+'0');
+		printf("\n");
 	}
 	if(i<0)
 		i=0;
@@ -832,16 +866,8 @@ char *bigNumCompute(char shu1[],char shu2[],bool headspace,int mode,long int pre
 	else
 		flag1 = false;
 	covertResult(result,&tmpSnum,flag1);
-
-	if(mode == 4)
-	{
-		if(need_roundUp)
-			plusOneUnit(&(tmpSnum.shuZi),flag1);
-		if(remainder != NULL)
-			(*remainder) = yu;
-		else
-			free(yu);
-	}
+	if(need_roundUp)
+		plusOneUnit(&(tmpSnum.shuZi),flag1);
 	if(!is_positive)
 		tmpSnum.shuZi[0]='-';
 	if(is_DeBugMode)
@@ -938,9 +964,7 @@ void covertResult(char *result,snum *aim,bool headspace)
 		i = aim->length - aim->xb + 3;
 	else
 		i = aim->length - aim->xb + 2;
-	charResult=(char *)malloc(sizeof(char)*i );
-	if(charResult == NULL)
-		memeryIsNotEnough();
+	charResult = justGetStrMem(i-1);
 	for( i = aim->xb, i2 = 0 ; i < aim->length ; i++ )
 	{
 		if(i2==0 && headspace)
@@ -972,7 +996,7 @@ char *covertInt2Char(long int aim)
 		i2 = i2 /10;
 		i++;
 	}
-	buff = (char *)malloc(sizeof(char)*( i +3 ));
+	buff = justGetStrMem(i+2);
 	if(buff == NULL)
 		memeryIsNotEnough();
 	if( aim == 0 )
@@ -1033,11 +1057,16 @@ void justOverwriteResult(char **result,char *num1,char *num2,int mode)
 }
 char *justCopyStr(char *src,int moreSpace)
 {
+	char *tmpCharPointer=justGetStrMem(myStrlen(src)+moreSpace);
+	strcpy(tmpCharPointer,src);
+	return tmpCharPointer;
+}
+char *justGetStrMem(size_t size)
+{
 	char *tmpCharPointer=NULL;
-	tmpCharPointer = (char *)malloc(sizeof(char)*(myStrlen(src)+2+moreSpace));
+	tmpCharPointer = (char *)malloc(sizeof(char)*(size +1));
 	if(tmpCharPointer == NULL)
 		memeryIsNotEnough();
-	strcpy(tmpCharPointer,src);
 	return tmpCharPointer;
 }
 int serialZeroCount(char *shuZi,int s1end)
@@ -1154,7 +1183,7 @@ bool judgeSmallerNum(char num1[],char num2[],int s1end,int s2end)
 	{	/**如果整数小，小数就不需要比较了**/
 		if(judgeSmallerInt(num1,num2,s1.intLength -1,s2.intLength -1))
 			return true;
-		if(strcmp2(num1,num2,s1.intLength-1))
+		if(myStrcmp(num1,num2,s1.intLength-1))
 		{
 			if(!s2.xsIsZero)
 			{
@@ -1202,7 +1231,7 @@ bool judgeSmallerXS(char num1[],char num2[],int s1end,int s2end)
 		return false;
 	exit(250);
 }
-bool strcmp2(char str1[],char str2[],int end)
+bool myStrcmp(char str1[],char str2[],int end)
 {
 	int i;
 	for(i=0;i<=end;i++)
@@ -1499,7 +1528,6 @@ void factorialUnit(fnum *src)
 			src->result = justCopyStr("1",0);
 			return;
 		}
-		
 	}
 	else if(src->i == 2)
 	{
@@ -1634,9 +1662,7 @@ char *getSqrt(char num1[],long int precision)
 	result=justCopyStr("1",0);
 	if(precision > 0)
 	{
-		pre = (char *)malloc(sizeof(char)*(precision+7));
-		if(pre == NULL)
-			memeryIsNotEnough();
+		pre = justGetStrMem(precision + 6);
 		memset(pre,'0',precision+4);
 		pre[1]='.';
 		pre[precision+3]='1';
@@ -1713,7 +1739,7 @@ void plusOneUnit(char **num,bool headspace)
 	}
 	else
 	{
-		buff = (char *)malloc(sizeof(char)*(i+1));
+		buff = justGetStrMem(i);
 		if(buff == NULL)
 			memeryIsNotEnough();
 		memset(buff,'0',i-1);
